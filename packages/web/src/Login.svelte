@@ -1,5 +1,6 @@
 <script lang="ts">
   import { oauthEnabled, saveToken, startOAuth } from './lib/auth';
+  import TokenHelp from './TokenHelp.svelte';
 
   let { onSignIn, error = '' }: { onSignIn: (token: string) => Promise<void>; error?: string } = $props();
 
@@ -40,11 +41,8 @@
       <div class="field">
         <label for="token">GitHub のトークン（開発用）</label>
         <input id="token" type="password" bind:value={token} autocomplete="off" required />
-        <p class="hint">
-          OAuth App が未設定のため、Personal Access Token（classic）でログインします。
-          スコープは <code>public_repo</code>・<code>workflow</code>・<code>read:org</code> が必要です。
-          トークンはこのタブを閉じると消えます。
-        </p>
+        <p class="hint">OAuth App が未設定のため、Personal Access Token でログインします。</p>
+        <TokenHelp />
       </div>
       <div class="actions">
         <button class="button" type="submit" disabled={busy || !token.trim()}>ログイン</button>

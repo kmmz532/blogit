@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { runSetup, steps, type BlogConfig, type GitHubClient, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { GitHubClient, runSetup, steps, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { onMount } from 'svelte';
+  import { saveToken } from './lib/auth';
+  import TokenHelp from './TokenHelp.svelte';
 
   let { gh, config, onBack }: { gh: GitHubClient; config: BlogConfig; onBack: () => void } = $props();
 
@@ -24,15 +26,21 @@
   let running = $state(false);
   let siteUrl = $state('');
   let runUrl = $state('');
+  // 権限不足で止まったときは、トークンを入れ直して続きから再実行できる
+  let client = $state(gh);
+  let newToken = $state('');
 
   async function start() {
     running = true;
     error = '';
     try {
-      await runSetup(gh, config, setupState, (id, s, e) => {
+      await runSetup(client, config, setupState, (id, s, e) => {
         status[id] = s;
         runUrl = setupState.runUrl ?? '';
-        if (e) error = e instanceof Error ? e.message : String(e);
+        if (e) {
+          error = e instanceof Error ? e.message : String(e);
+          if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。下で権限を確認して入れ直してください）';
+        }
       });
       siteUrl = setupState.siteUrl ?? '';
     } catch {
@@ -40,6 +48,14 @@
     } finally {
       running = false;
     }
+  }
+
+  function retryWithToken(e: SubmitEvent) {
+    e.preventDefault();
+    client = new GitHubClient(newToken.trim());
+    saveToken(newToken.trim());
+    newToken = '';
+    start();
   }
 
   onMount(start);
@@ -69,6 +85,16 @@
       <button class="button" type="button" onclick={start} disabled={running}>続きから再実行</button>
       <button class="button secondary" type="button" onclick={onBack} disabled={running}>入力に戻る</button>
     </div>
+    <form class="card stack" onsubmit={retryWithToken}>
+      <div class="field">
+        <label for="new-token">トークンを入れ直して再実行</label>
+        <input id="new-token" type="password" bind:value={newToken} autocomplete="off" required />
+        <TokenHelp />
+      </div>
+      <div class="actions">
+        <button class="button" type="submit" disabled={running || !newToken.trim()}>このトークンで続きから再実行</button>
+      </div>
+    </form>
   {/if}
 
   {#if siteUrl}

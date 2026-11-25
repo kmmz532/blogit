@@ -109,7 +109,7 @@ jobs:
       - run: hugo --minify --gc
         env:
           HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: public
       - id: deployment
