@@ -1,0 +1,8 @@
+name = "blogit-auth"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+
+[vars]
+# Web アプリを置く origin（カンマ区切り）
+ALLOWED_ORIGINS = "https://kmmz532.github.io,http://localhost:5173"
+# GITHUB_CLIENT_ID と GITHUB_CLIENT_SECRET は wrangler secret put で登録する
