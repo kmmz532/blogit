@@ -1,0 +1,362 @@
+/* かみみずブログ（Blogit default テーマ）と同じ色・フォント */
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --link: #0a63d8;
+  --link-hover: #1a73e8;
+  --border: #e3e3e3;
+  --text-primary: #000;
+  --text-secondary: #666;
+  --button-primary-hover: #383838;
+  --button-secondary-hover: #f2f2f2;
+  --danger: #c62828;
+  --success: #2e7d32;
+  --background-rgb: 255, 255, 255;
+  --foreground-rgb: 26, 26, 26;
+  --font-body: "Geist", Arial, Helvetica, sans-serif;
+  --font-logo: "Orbitron", Arial, Helvetica, sans-serif;
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #1a1a1a;
+  --foreground: #ededed;
+  --link: #7aa4e8;
+  --link-hover: #8ab4f8;
+  --border: #3a3a3a;
+  --text-primary: #ededed;
+  --text-secondary: #999;
+  --button-primary-hover: #ccc;
+  --button-secondary-hover: #242424;
+  --danger: #ef7676;
+  --success: #81c784;
+  --background-rgb: 26, 26, 26;
+  --foreground-rgb: 237, 237, 237;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  line-height: 1.7;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+/* ヘッダー（ブログと同じ） */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 3.5rem;
+  background-color: rgba(var(--background-rgb), 0.8);
+  backdrop-filter: blur(3px);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.logo {
+  font-family: var(--font-logo);
+  font-weight: bold;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--foreground);
+}
+
+.logo:hover {
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--foreground);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--button-secondary-hover);
+}
+
+/* 本文 */
+.main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.page-title {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -2.4px;
+  margin-bottom: 0.75rem;
+}
+
+.lead {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--background);
+}
+
+.stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* フォーム */
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field label,
+.field legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.error-text {
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--link);
+  outline-offset: -1px;
+}
+
+fieldset {
+  border: 0;
+}
+
+.repo-input {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.repo-input span {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 選択肢（テーマ・言語など） */
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.choice {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--foreground);
+}
+
+.choice:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+}
+
+.choice-name {
+  font-weight: 600;
+}
+
+.swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.swatches span {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--foreground-rgb), 0.15);
+}
+
+/* ボタン（kmmz.jp の .ctas a と同じ見た目） */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 48px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 128px;
+  background: var(--foreground);
+  color: var(--background);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.button:hover {
+  background: var(--button-primary-hover);
+  color: var(--background);
+  text-decoration: none;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  border-color: var(--border);
+  background: none;
+  color: var(--foreground);
+}
+
+.button.secondary:hover {
+  background: var(--button-secondary-hover);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* 進捗 */
+.steps {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.step i {
+  width: 1.25rem;
+  margin-top: 0.3rem;
+  text-align: center;
+}
+
+.step.pending {
+  color: var(--text-secondary);
+}
+
+.step.done i {
+  color: var(--success);
+}
+
+.step.error i {
+  color: var(--danger);
+}
+
+.footer {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 30px;
+    letter-spacing: -1.5px;
+  }
+}

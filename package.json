@@ -1,0 +1,17 @@
+{
+  "name": "blogit",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @blogit/web",
+    "build": "npm run build -w @blogit/web",
+    "check": "npm run check -w @blogit/core && npm run check -w @blogit/web",
+    "test": "npm test -w @blogit/core"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3"
+  }
+}

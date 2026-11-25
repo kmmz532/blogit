@@ -1,0 +1,10 @@
+{
+  "name": "@blogit/core",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "check": "tsc -p .",
+    "test": "node --test --experimental-strip-types src/*.test.ts"
+  }
+}

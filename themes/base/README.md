@@ -18,6 +18,7 @@ Blogit の各テーマ（default / warm / cool）が共通で使う HTML・CSS�
 ## サイトの設定
 
 `defaultContentLanguage` を必ず書く（未設定だと `en` 扱いになり、画面の文言が英語になる）。
+`outputs`（`home = ["HTML", "RSS", "JSON"]`）も書く。テーマの `outputs` はサイトに引き継がれず、検索が使う `/index.json` が出ない。
 
 ### `params`
 
