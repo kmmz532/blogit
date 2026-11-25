@@ -36,17 +36,18 @@
   onMount(async () => {
     try {
       const cfToken = await completeCloudflareOAuth();
-      if (cfToken) await loadCloudflare(cfToken);
-      else {
-        const savedCfToken = loadCloudflareToken();
-        if (savedCfToken) await loadCloudflare(savedCfToken);
-      }
+      const savedCfToken = cfToken ?? loadCloudflareToken();
+      if (savedCfToken) await loadCloudflare(savedCfToken);
+    } catch (e) {
+      cloudflareError = e instanceof Error ? e.message : String(e);
+    }
+
+    try {
       const token = (await completeOAuth()) ?? loadToken();
       if (token) await signIn(token);
     } catch (e) {
+      clearToken();
       loginError = e instanceof Error ? e.message : String(e);
-      if (loadCloudflareToken()) cloudflareError = loginError;
-      else clearToken();
     } finally {
       loading = false;
     }
