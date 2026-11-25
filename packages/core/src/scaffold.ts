@@ -9,11 +9,17 @@ export function pagesBaseURL(owner: string, repo: string): string {
   return repo.toLowerCase() === host ? `https://${host}/` : `https://${host}/${repo}/`;
 }
 
+export function cloudflarePagesBaseURL(repo: string): string {
+  return `https://${repo.toLowerCase()}.pages.dev/`;
+}
+
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
-// baseURL は GitHub Pages が返す実際の公開 URL（独自ドメインのときはそのドメイン）。省略時は github.io の URL
-export function hugoToml(c: BlogConfig, baseURL = pagesBaseURL(c.owner, c.repo)): string {
+// baseURL は実際の公開 URL。省略時は選択された公開先の URL
+export function hugoToml(c: BlogConfig, baseURL = c.provider === 'cloudflare-pages'
+  ? cloudflarePagesBaseURL(c.repo)
+  : pagesBaseURL(c.owner, c.repo)): string {
   const repo = `${c.owner}/${c.repo}`;
   return `title = ${str(c.title)}
 baseURL = ${str(baseURL)}
@@ -101,12 +107,12 @@ jobs:
           extended: true
       - uses: actions/cache@v4
         with:
-          path: \${{ runner.temp }}/hugo_cache
-          key: hugo-\${{ hashFiles('assets/**', 'hugo.toml', 'go.sum') }}
+          path: ${${{ runner.temp }}/hugo_cache}
+          key: hugo-${${{ hashFiles('assets/**', 'hugo.toml', 'go.sum') }}
           restore-keys: hugo-
       - run: hugo --minify --gc
         env:
-          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache
+          HUGO_CACHEDIR: ${${{ runner.temp }}/hugo_cache}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -118,7 +124,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
+      url: ${${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
@@ -159,15 +165,18 @@ ${c.description}
 }
 
 // 単一リポジトリ型のサイト一式
-export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = pagesBaseURL(c.owner, c.repo) } = {}): FileMap {
+export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = c.provider === 'cloudflare-pages'
+  ? cloudflarePagesBaseURL(c.repo)
+  : pagesBaseURL(c.owner, c.repo) } = {}): FileMap {
   const post = firstPost(c, now);
-  return {
+  const files: FileMap = {
     'hugo.toml': hugoToml(c, baseURL),
     'go.mod': goMod(c),
-    '.github/workflows/deploy.yml': deployWorkflow(),
     '.gitignore': 'public/\nresources/\n.hugo_build.lock\n',
     'README.md': readme(c, baseURL),
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };
+  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
+  return files;
 }
