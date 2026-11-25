@@ -5,7 +5,7 @@ Blogit の Web アプリが GitHub OAuth でログインするとき、認可コ
 ## セットアップ
 
 1. GitHub で OAuth App を作る（Settings → Developer settings → OAuth Apps）
-   - Homepage URL: Web アプリの URL（例 `https://kmmz532.github.io/blogit/`）
+   - Homepage URL: Web アプリの URL（例 `https://blogit.kmmz.jp/`）
    - Authorization callback URL: 同じ URL
 2. Worker を公開し、Client ID と Client Secret を登録する
 
