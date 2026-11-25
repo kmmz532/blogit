@@ -45,6 +45,8 @@
         if (!config.cloudflareAccountId) throw new Error('Cloudflareアカウントが選択されていません。');
         const cf = new CloudflareClient(token);
         const ref = { owner: config.owner, repo: config.repo };
+        const projectName = config.repo.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 58);
+        if (!projectName) throw new Error('リポジトリ名からCloudflare Pagesのプロジェクト名を生成できません。');
 
         report('create-repo', 'running');
         if (!(await client.repoExists(ref))) {
@@ -63,14 +65,17 @@
         report('push-site', 'done');
 
         report('wait-deploy', 'running');
-        const project = await cf.createPagesProject(config.cloudflareAccountId, {
-          owner: config.owner, ownerId: details.ownerId, repoId: details.id,
-          repoName: config.repo, branch: details.defaultBranch,
-        });
-        const url = project.subdomain ? `https://${project.subdomain}/` : cloudflarePagesBaseURL(config.repo);
+        let project = await cf.getPagesProject(config.cloudflareAccountId, projectName);
+        if (!project) {
+          project = await cf.createPagesProject(config.cloudflareAccountId, {
+            owner: config.owner, ownerId: details.ownerId, repoId: details.id,
+            repoName: projectName, branch: details.defaultBranch,
+          });
+        }
+        const url = project.subdomain ? `https://${project.subdomain}/` : `https://${projectName}.pages.dev/`;
         const deadline = Date.now() + 10 * 60 * 1000;
         while (Date.now() < deadline) {
-          const deployments = await cf.listDeployments(config.cloudflareAccountId, config.repo.toLowerCase());
+          const deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
           const deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha);
           if (deployment) {
             runUrl = deployment.url;
@@ -128,7 +133,7 @@
         <div>
           <div>{labels[s.id]}</div>
           {#if s.id === 'wait-deploy' && runUrl}
-            <a class="hint" href={runUrl} target="_blank" rel="noopener">Actions のログを見る</a>
+            <a class="hint" href={runUrl} target="_blank" rel="noopener">{config.provider === 'cloudflare-pages' ? 'Cloudflare Pages のデプロイを見る' : 'Actions のログを見る'}</a>
           {/if}
         </div>
       </li>
