@@ -3,12 +3,19 @@
 
   let { gh, owners, onSubmit }: { gh: GitHubClient; owners: Owner[]; onSubmit: (c: BlogConfig) => void } = $props();
 
-  // 見本の色は各テーマの theme.css の背景・文字・リンクの色
-  const themes: { name: ThemeName; label: string; colors: string[] }[] = [
-    { name: 'default', label: 'Default', colors: ['#ffffff', '#1a1a1a', '#0a63d8'] },
-    { name: 'warm', label: 'Warm', colors: ['#fbf7f1', '#3b2f2a', '#b8532a'] },
-    { name: 'cool', label: 'Cool', colors: ['#f5f8fb', '#14202b', '#0a7aa3'] },
+  // スクリーンショットは scripts/theme-screenshots.mjs で examples/site から撮る
+  const themes: { name: ThemeName; label: string; note: string }[] = [
+    { name: 'default', label: 'Default', note: 'シンプルな白黒。かみみずブログと同じ見た目' },
+    { name: 'warm', label: 'Warm', note: '生成り色と明朝の見出し。罫線で区切る' },
+    { name: 'cool', label: 'Cool', note: '青みの配色と等幅の日付。角のない線で整える' },
   ];
+  const views = [
+    { id: 'home-light', label: 'トップ' },
+    { id: 'post-light', label: '記事' },
+    { id: 'home-dark', label: 'ダーク' },
+  ];
+  const shot = (theme: ThemeName, view: string) => `./themes/${theme}-${view}.png`;
+  let view = $state('home-light');
 
   let owner = $state(owners[0].login);
   let repo = $state('blog');
@@ -92,14 +99,21 @@
         {#each themes as t (t.name)}
           <label class="choice">
             <input type="radio" name="theme" value={t.name} bind:group={theme} />
-            <span class="swatches">
-              {#each t.colors as c}<span style:background={c}></span>{/each}
-            </span>
+            <img class="choice-thumb" src={shot(t.name, 'home-light')} alt="" loading="lazy" />
             <span class="choice-name">{t.label}</span>
+            <span class="hint">{t.note}</span>
           </label>
         {/each}
       </div>
     </fieldset>
+    <div class="preview">
+      <div class="tabs" role="tablist" aria-label="プレビュー">
+        {#each views as v (v.id)}
+          <button type="button" role="tab" class="tab" aria-selected={view === v.id} onclick={() => (view = v.id)}>{v.label}</button>
+        {/each}
+      </div>
+      <img class="preview-image" src={shot(theme, view)} alt="{theme} テーマのプレビュー" />
+    </div>
     <fieldset class="field">
       <legend>言語</legend>
       <div class="choices">
