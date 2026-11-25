@@ -1,0 +1,105 @@
+/* cool: 青みの白にシアンのアクセント。角は小さく、線と余白ですっきり見せる */
+:root {
+  --background: #f5f8fb;
+  --foreground: #14202b;
+  --link: #0a7aa3;
+  --link-hover: #0b94c4;
+  --border: #d6e0ea;
+  --text-primary: #0c1720;
+  --text-secondary: #5d6f80;
+  --button-primary-hover: #24384a;
+  --button-secondary-hover: #e9f0f6;
+  --button-secondary-border: #d6e0ea;
+  --background-rgb: 245, 248, 251;
+  --foreground-rgb: 20, 32, 43;
+  --font-body: "Inter", "Noto Sans JP", sans-serif;
+  --font-logo: "Space Grotesk", "Inter", sans-serif;
+  --surface: #ffffff;
+}
+
+html.dark {
+  --background: #0e1620;
+  --foreground: #dbe5ee;
+  --link: #5cc2e6;
+  --link-hover: #84d3ef;
+  --border: #233243;
+  --text-primary: #eef4f9;
+  --text-secondary: #8497a9;
+  --button-primary-hover: #b7c7d6;
+  --button-secondary-hover: #152130;
+  --button-secondary-border: #233243;
+  --background-rgb: 14, 22, 32;
+  --foreground-rgb: 219, 229, 238;
+  --surface: #121d2a;
+}
+
+/* 技術文書のように、角丸を使わず細い線と等幅の補足情報で整える */
+.header {
+  border-bottom: 1px solid var(--border);
+}
+
+.header .title {
+  letter-spacing: 0.12em;
+}
+
+.carditem,
+.sidebar-card,
+.card-thumb,
+.search-box,
+.icon-button {
+  border-radius: 0;
+}
+
+.carditem,
+.sidebar-card {
+  background: var(--surface);
+}
+
+.card-meta,
+.post-meta,
+.sidebar-list .count,
+.sidebar-title {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.card-meta,
+.post-meta {
+  font-size: 0.8rem;
+}
+
+.sidebar-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.card-title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.chip {
+  border-radius: 0;
+  border: 1px solid var(--border);
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+a.chip:hover {
+  border-color: var(--link);
+  background: none;
+  color: var(--link);
+}
+
+.post-title {
+  letter-spacing: -1px;
+}
+
+.post-body h2 {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}

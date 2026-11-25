@@ -1,0 +1,4 @@
+# Blogit テーマ: cool（寒色系・シャープな見た目）
+[module]
+  [[module.imports]]
+    path = "github.com/kmmz532/blogit/themes/base"

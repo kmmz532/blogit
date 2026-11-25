@@ -1,0 +1,117 @@
+/* warm: 生成り色の背景にテラコッタのアクセント。角は大きく丸め、見出しは明朝 */
+:root {
+  --background: #fbf7f1;
+  --foreground: #3b2f2a;
+  --link: #b8532a;
+  --link-hover: #d0683c;
+  --border: #eadfd2;
+  --text-primary: #2c221e;
+  --text-secondary: #85746a;
+  --button-primary-hover: #5a463d;
+  --button-secondary-hover: #f3ebe1;
+  --button-secondary-border: #eadfd2;
+  --background-rgb: 251, 247, 241;
+  --foreground-rgb: 59, 47, 42;
+  --font-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+  --font-logo: "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --surface: #fffdf9;
+}
+
+html.dark {
+  --background: #221c18;
+  --foreground: #efe6dc;
+  --link: #e8956a;
+  --link-hover: #f2ab85;
+  --border: #3d332c;
+  --text-primary: #f6eee5;
+  --text-secondary: #a8998d;
+  --button-primary-hover: #d9cbbd;
+  --button-secondary-hover: #2c241f;
+  --button-secondary-border: #3d332c;
+  --background-rgb: 34, 28, 24;
+  --foreground-rgb: 239, 230, 220;
+  --surface: #2a221d;
+}
+
+/* 紙の冊子のように、箱と影を使わず罫線と余白で区切る */
+body {
+  line-height: 1.9;
+}
+
+.header .title {
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.post-title,
+.page-title,
+.card-title,
+.sidebar-title,
+.post-body h2,
+.post-body h3 {
+  font-family: var(--font-logo);
+  letter-spacing: 0.02em;
+}
+
+.post-title {
+  font-size: 34px;
+}
+
+.page-title,
+.post-body h2 {
+  font-size: 26px;
+}
+
+.card-list {
+  gap: 0;
+}
+
+.carditem {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 1.5rem 0;
+  background: none;
+}
+
+.card-thumb {
+  border-radius: 2px;
+}
+
+.card-meta,
+.post-meta {
+  font-family: var(--font-logo);
+}
+
+.sidebar-card {
+  border: 0;
+  border-top: 1px solid var(--foreground);
+  border-radius: 0;
+  padding: 0.75rem 0 0;
+  background: none;
+}
+
+.sidebar-title {
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: 0.1em;
+  color: var(--foreground);
+}
+
+.chip {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+}
+
+a.chip:hover {
+  background: none;
+  color: var(--link);
+}
+
+.post-body h2 {
+  margin-top: 3rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
