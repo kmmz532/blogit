@@ -63,9 +63,13 @@ export class GitHubClient {
     await this.request('POST', path, { name: repo, description, private: false, auto_init: true });
   }
 
-  async getDefaultBranch({ owner, repo }: RepoRef): Promise<string> {
-    const r = await this.request<{ default_branch: string }>('GET', `/repos/${owner}/${repo}`);
-    return r.default_branch;
+  async getRepositoryDetails({ owner, repo }: RepoRef): Promise<{ id: number; ownerId: number; defaultBranch: string }> {
+    const r = await this.request<{ id: number; default_branch: string; owner: { id: number } }>('GET', `/repos/${owner}/${repo}`);
+    return { id: r.id, ownerId: r.owner.id, defaultBranch: r.default_branch };
+  }
+
+  async getDefaultBranch(ref: RepoRef): Promise<string> {
+    return (await this.getRepositoryDetails(ref)).defaultBranch;
   }
 
   // 複数ファイルを 1 コミットで追加する。返り値はコミットの SHA

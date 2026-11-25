@@ -1,5 +1,6 @@
 export type ThemeName = 'default' | 'warm' | 'cool';
 export type Language = 'ja' | 'en';
+export type DeploymentProvider = 'github-pages' | 'cloudflare-pages';
 
 // ウィザードで集める入力。ここから生成するファイルとセットアップ手順がすべて決まる
 export interface BlogConfig {
@@ -10,6 +11,8 @@ export interface BlogConfig {
   owner: string;
   ownerType: 'User' | 'Organization';
   repo: string;
+  provider: DeploymentProvider;
+  cloudflareAccountId?: string;
   theme: ThemeName;
   language: Language;
 }

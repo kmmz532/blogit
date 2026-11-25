@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { GitHubClient, type BlogConfig, type Owner } from '@blogit/core';
+  import { GitHubClient, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
+  import { clearCloudflareToken, CloudflareClient, completeCloudflareOAuth, loadCloudflareToken, startCloudflareOAuth, type CloudflareAccount } from './lib/cloudflare';
   import Login from './Login.svelte';
   import Progress from './Progress.svelte';
   import SetupForm from './SetupForm.svelte';
@@ -9,6 +10,11 @@
   let gh = $state<GitHubClient | null>(null);
   let owners = $state<Owner[]>([]);
   let config = $state<BlogConfig | null>(null);
+  let cloudflareAccounts = $state<CloudflareAccount[]>([]);
+  let cloudflareConnected = $state(false);
+  let selectedCloudflareAccountId = $state('');
+  let selectedProvider = $state<DeploymentProvider>('github-pages');
+  let cloudflareError = $state('');
   let loading = $state(true);
   let loginError = $state('');
 
@@ -18,7 +24,40 @@
     gh = client;
   }
 
+  async function connectCloudflare() {
+    cloudflareError = '';
+    sessionStorage.setItem('blogit:deployment-provider', 'cloudflare-pages');
+    await startCloudflareOAuth();
+  }
+
+  async function loadCloudflare(token: string) {
+    const client = new CloudflareClient(token);
+    cloudflareAccounts = await client.listAccounts();
+    if (!cloudflareAccounts.some((account) => account.id === selectedCloudflareAccountId)) {
+      selectedCloudflareAccountId = cloudflareAccounts[0]?.id ?? '';
+    }
+    cloudflareConnected = true;
+  }
+
+  function selectProvider(provider: DeploymentProvider) {
+    selectedProvider = provider;
+    try {
+      sessionStorage.setItem('blogit:deployment-provider', provider);
+    } catch {}
+  }
+
   onMount(async () => {
+    try {
+      selectedProvider = sessionStorage.getItem('blogit:deployment-provider') === 'cloudflare-pages'
+        ? 'cloudflare-pages'
+        : 'github-pages';
+      const cfToken = await completeCloudflareOAuth();
+      const savedCfToken = cfToken ?? loadCloudflareToken();
+      if (savedCfToken) await loadCloudflare(savedCfToken);
+    } catch (e) {
+      cloudflareError = e instanceof Error ? e.message : String(e);
+    }
+
     try {
       const token = (await completeOAuth()) ?? loadToken();
       if (token) await signIn(token);
@@ -32,9 +71,15 @@
 
   function signOut() {
     clearToken();
+    clearCloudflareToken();
     gh = null;
     owners = [];
     config = null;
+    cloudflareAccounts = [];
+    cloudflareConnected = false;
+    selectedCloudflareAccountId = '';
+    selectedProvider = 'github-pages';
+    try { sessionStorage.removeItem('blogit:deployment-provider'); } catch {}
   }
 
   function toggleTheme() {
@@ -69,12 +114,12 @@
   {:else if !gh}
     <Login onSignIn={signIn} error={loginError} />
   {:else if !config}
-    <SetupForm {gh} {owners} onSubmit={(c) => (config = c)} />
+    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
   {:else}
     <Progress {gh} {config} onBack={() => (config = null)} />
   {/if}
 </main>
 
 <footer class="footer">
-  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages
+  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages / Cloudflare Pages
 </footer>

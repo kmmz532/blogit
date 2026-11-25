@@ -1,9 +1,23 @@
 <script lang="ts">
-  import { pagesBaseURL, validateRepoName, type BlogConfig, type GitHubClient, type Owner, type ThemeName } from '@blogit/core';
+  import { pagesBaseURL, cloudflarePagesBaseURL, validateRepoName, type BlogConfig, type DeploymentProvider, type GitHubClient, type Owner, type ThemeName } from '@blogit/core';
+  import type { CloudflareAccount } from './lib/cloudflare';
 
-  let { gh, owners, onSubmit }: { gh: GitHubClient; owners: Owner[]; onSubmit: (c: BlogConfig) => void } = $props();
+  let {
+    gh, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, selectedCloudflareAccountId, selectedProvider, onSelectProvider, onConnectCloudflare, onSelectCloudflareAccount, onSubmit,
+  }: {
+    gh: GitHubClient;
+    owners: Owner[];
+    cloudflareAccounts: CloudflareAccount[];
+    cloudflareConnected: boolean;
+    cloudflareError: string;
+    selectedCloudflareAccountId: string;
+    selectedProvider: DeploymentProvider;
+    onSelectProvider: (provider: DeploymentProvider) => void;
+    onConnectCloudflare: () => Promise<void>;
+    onSelectCloudflareAccount: (id: string) => void;
+    onSubmit: (c: BlogConfig) => void;
+  } = $props();
 
-  // スクリーンショットは scripts/theme-screenshots.mjs で examples/site から撮る
   const themes: { name: ThemeName; label: string; note: string }[] = [
     { name: 'default', label: 'Default', note: 'シンプルな白黒。かみみずブログと同じ見た目' },
     { name: 'warm', label: 'Warm', note: '生成り色と明朝の見出し。罫線で区切る' },
@@ -16,7 +30,6 @@
   ];
   const shot = (theme: ThemeName, view: string) => `./themes/${theme}-${view}.png`;
   let view = $state('home-light');
-
   let owner = $state(owners[0].login);
   let repo = $state('blog');
   let title = $state('');
@@ -25,22 +38,50 @@
   let theme = $state<ThemeName>('default');
   let language = $state<'ja' | 'en'>('ja');
   let busy = $state(false);
+  let connecting = $state(false);
   let error = $state('');
 
   const repoValid = $derived(validateRepoName(repo));
-  const url = $derived(repoValid ? pagesBaseURL(owner, repo) : '');
+  const cloudflareRepoValid = $derived(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(repo));
+  const url = $derived(selectedProvider === 'cloudflare-pages'
+    ? (cloudflareRepoValid ? cloudflarePagesBaseURL(repo) : '')
+    : (repoValid ? pagesBaseURL(owner, repo) : ''));
+  const canSubmit = $derived(repoValid && title.trim() && (selectedProvider === 'github-pages'
+    || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
+
+  async function connect() {
+    connecting = true;
+    try {
+      await onConnectCloudflare();
+    } finally {
+      connecting = false;
+    }
+  }
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
     busy = true;
     error = '';
     try {
+      if (selectedProvider === 'cloudflare-pages' && !cloudflareRepoValid) {
+        error = 'Cloudflare Pages のプロジェクト名には小文字英数字とハイフンだけを使えます。';
+        return;
+      }
+      if (selectedProvider === 'cloudflare-pages' && (!cloudflareConnected || !selectedCloudflareAccountId)) {
+        error = '先にCloudflareアカウントを接続してください。';
+        return;
+      }
       if (await gh.repoExists({ owner, repo })) {
         error = `${owner}/${repo} はすでにあります。別の名前にしてください。`;
         return;
       }
       const ownerType = owners.find((o) => o.login === owner)!.type;
-      onSubmit({ title: title.trim(), description: description.trim(), author: author.trim(), owner, ownerType, repo, theme, language });
+      onSubmit({
+        title: title.trim(), description: description.trim(), author: author.trim(),
+        owner, ownerType, repo, provider: selectedProvider,
+        ...(selectedProvider === 'cloudflare-pages' ? { cloudflareAccountId: selectedCloudflareAccountId } : {}),
+        theme, language,
+      });
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     } finally {
@@ -50,9 +91,56 @@
 </script>
 
 <h1 class="page-title">ブログを作る</h1>
-<p class="lead">入力した内容で GitHub にリポジトリを作り、GitHub Pages に公開します。あとから管理画面で変更できます。</p>
+<p class="lead">GitHub にリポジトリを作成し、選択したサービスに公開します。</p>
 
 <form class="stack" onsubmit={submit}>
+  <section class="card stack">
+    <h2 class="section-title">公開先</h2>
+    <fieldset class="field">
+      <legend>ホスティングサービス</legend>
+      <div class="choices">
+        <label class="choice">
+          <input type="radio" name="provider" value="github-pages" checked={selectedProvider === 'github-pages'} onchange={() => onSelectProvider('github-pages')} />
+          <span class="choice-name">GitHub Pages</span>
+          <span class="hint">GitHub Actions でビルド・公開</span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="provider" value="cloudflare-pages" checked={selectedProvider === 'cloudflare-pages'} onchange={() => onSelectProvider('cloudflare-pages')} />
+          <span class="choice-name">Cloudflare Pages</span>
+          <span class="hint">Cloudflare の Git 連携で自動ビルド・公開</span>
+        </label>
+      </div>
+    </fieldset>
+    {#if selectedProvider === 'cloudflare-pages'}
+      <div class="stack">
+        {#if cloudflareConnected}
+          <p class="hint">Cloudflare 接続済み。公開先アカウントを選択してね。</p>
+          {#if cloudflareAccounts.length > 0}
+            <div class="field">
+              <label for="cloudflare-account">Cloudflare アカウント</label>
+              <select id="cloudflare-account" value={selectedCloudflareAccountId} onchange={(event) => onSelectCloudflareAccount((event.currentTarget as HTMLSelectElement).value)}>
+                {#each cloudflareAccounts as account (account.id)}
+                  <option value={account.id}>{account.name}</option>
+                {/each}
+              </select>
+            </div>
+          {:else}
+            <p class="hint">利用可能なCloudflareアカウントがありません。</p>
+          {/if}
+        {:else}
+          <p class="hint">Cloudflare Pages を使う場合だけ、Cloudflare アカウントを接続します。</p>
+          <div class="actions">
+            <button class="button" type="button" onclick={connect} disabled={connecting}>
+              {connecting ? '接続中…' : 'Cloudflare と接続'}
+            </button>
+          </div>
+        {/if}
+        {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
+        <p class="hint">※ GitHub リポジトリを Cloudflare Pages に接続するには、Cloudflare 側の GitHub App 認可も必要です。</p>
+      </div>
+    {/if}
+  </section>
+
   <section class="card stack">
     <h2 class="section-title">ブログ</h2>
     <div class="field">
@@ -82,8 +170,12 @@
         <span>/</span>
         <input id="repo" type="text" bind:value={repo} required />
       </div>
-      {#if repoValid}
+      {#if url}
         <p class="hint">公開 URL: {url}</p>
+      {:else if selectedProvider === 'cloudflare-pages'}
+        <p class="error-text">Cloudflare Pages のプロジェクト名は小文字英数字とハイフンのみ使用できます。</p>
+      {:else if repoValid}
+        <p class="hint">GitHub Pages URL: {url}</p>
       {:else}
         <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます。</p>
       {/if}
@@ -125,6 +217,6 @@
 
   {#if error}<p class="error-text">{error}</p>{/if}
   <div class="actions">
-    <button class="button" type="submit" disabled={busy || !repoValid || !title.trim()}>作成して公開する</button>
+    <button class="button" type="submit" disabled={busy || !canSubmit}>作成して公開する</button>
   </div>
 </form>
