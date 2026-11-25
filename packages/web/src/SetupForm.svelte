@@ -1,9 +1,19 @@
 <script lang="ts">
   import { pagesBaseURL, validateRepoName, type BlogConfig, type GitHubClient, type Owner, type ThemeName } from '@blogit/core';
+  import type { CloudflareAccount } from './lib/cloudflare';
 
-  let { gh, owners, onSubmit }: { gh: GitHubClient; owners: Owner[]; onSubmit: (c: BlogConfig) => void } = $props();
+  let {
+    gh, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, onConnectCloudflare, onSubmit,
+  }: {
+    gh: GitHubClient;
+    owners: Owner[];
+    cloudflareAccounts: CloudflareAccount[];
+    cloudflareConnected: boolean;
+    cloudflareError: string;
+    onConnectCloudflare: () => Promise<void>;
+    onSubmit: (c: BlogConfig) => void;
+  } = $props();
 
-  // スクリーンショットは scripts/theme-screenshots.mjs で examples/site から撮る
   const themes: { name: ThemeName; label: string; note: string }[] = [
     { name: 'default', label: 'Default', note: 'シンプルな白黒。かみみずブログと同じ見た目' },
     { name: 'warm', label: 'Warm', note: '生成り色と明朝の見出し。罫線で区切る' },
@@ -16,7 +26,6 @@
   ];
   const shot = (theme: ThemeName, view: string) => `./themes/${theme}-${view}.png`;
   let view = $state('home-light');
-
   let owner = $state(owners[0].login);
   let repo = $state('blog');
   let title = $state('');
@@ -25,10 +34,20 @@
   let theme = $state<ThemeName>('default');
   let language = $state<'ja' | 'en'>('ja');
   let busy = $state(false);
+  let connecting = $state(false);
   let error = $state('');
 
   const repoValid = $derived(validateRepoName(repo));
   const url = $derived(repoValid ? pagesBaseURL(owner, repo) : '');
+
+  async function connect() {
+    connecting = true;
+    try {
+      await onConnectCloudflare();
+    } finally {
+      connecting = false;
+    }
+  }
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
@@ -50,7 +69,25 @@
 </script>
 
 <h1 class="page-title">ブログを作る</h1>
-<p class="lead">入力した内容で GitHub にリポジトリを作り、GitHub Pages に公開します。あとから管理画面で変更できます。</p>
+<p class="lead">GitHub にリポジトリを作成し、GitHub Pages または Cloudflare Pages に公開します。</p>
+
+<section class="card stack">
+  <h2 class="section-title">Cloudflare 接続</h2>
+  {#if cloudflareConnected}
+    <p class="hint">接続済み：{cloudflareAccounts.length} 個のアカウントを取得しました。</p>
+    {#each cloudflareAccounts as account (account.id)}
+      <p>{account.name}</p>
+    {/each}
+  {:else}
+    <p class="hint">Cloudflare Pages を公開先にする場合は、Cloudflare アカウントを接続します。</p>
+    <div class="actions">
+      <button class="button" type="button" onclick={connect} disabled={connecting}>
+        Cloudflare と接続
+      </button>
+    </div>
+  {/if}
+  {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
+</section>
 
 <form class="stack" onsubmit={submit}>
   <section class="card stack">
@@ -83,7 +120,7 @@
         <input id="repo" type="text" bind:value={repo} required />
       </div>
       {#if repoValid}
-        <p class="hint">公開 URL: {url}</p>
+        <p class="hint">GitHub Pages URL: {url}</p>
       {:else}
         <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます。</p>
       {/if}
