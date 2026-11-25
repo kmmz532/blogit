@@ -90,9 +90,6 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -112,6 +109,16 @@ jobs:
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
+
+  # アーティファクトはジョブが終わってから確定するので、公開は別のジョブで行う
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
 `;
