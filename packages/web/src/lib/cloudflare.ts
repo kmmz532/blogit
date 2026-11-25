@@ -93,21 +93,83 @@ export interface CloudflareAccount {
   name: string;
 }
 
+export interface CloudflareDeployment {
+  id: string;
+  url: string;
+  latest_stage?: { name: string; status: string };
+  deployment_trigger?: { metadata?: { commit_hash?: string } };
+}
+
 export class CloudflareClient {
   constructor(private readonly token: string) {}
 
-  async listAccounts(): Promise<CloudflareAccount[]> {
-    const response = await fetch(`${API_URL}/accounts?per_page=50`, {
-      headers: { Authorization: `Bearer ${this.token}`, Accept: 'application/json' },
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...init.headers,
+      },
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success !== true) {
       const message = data.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(', ');
       throw new Error(message || `Cloudflare API error: ${response.status}`);
     }
-    return (data.result ?? []).map((account: { id: string; name: string }) => ({
+    return data.result as T;
+  }
+
+  async listAccounts(): Promise<CloudflareAccount[]> {
+    const result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
+    return (result ?? []).map((account: { id: string; name: string }) => ({
       id: account.id,
       name: account.name,
     }));
+  }
+
+  async createPagesProject(accountId: string, repo: {
+    owner: string; ownerId: number; repoId: number; repoName: string; branch: string;
+  }): Promise<{ subdomain?: string }> {
+    return this.request(`/accounts/${accountId}/pages/projects`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: repo.repoName.toLowerCase(),
+        production_branch: repo.branch,
+        build_config: {
+          build_command: 'hugo --minify --gc',
+          destination_dir: 'public',
+          root_dir: '/',
+        },
+        deployment_configs: {
+          preview: { env_vars: {
+            HUGO_VERSION: { type: 'plain_text', value: '0.141.0' },
+            GO_VERSION: { type: 'plain_text', value: '1.24.0' },
+          } },
+          production: { env_vars: {
+            HUGO_VERSION: { type: 'plain_text', value: '0.141.0' },
+            GO_VERSION: { type: 'plain_text', value: '1.24.0' },
+          } },
+        },
+        source: {
+          type: 'github',
+          config: {
+            owner: repo.owner,
+            owner_id: String(repo.ownerId),
+            repo_id: String(repo.repoId),
+            repo_name: repo.repoName,
+            production_branch: repo.branch,
+            production_deployments_enabled: true,
+            preview_deployment_setting: 'none',
+            pr_comments_enabled: false,
+          },
+        },
+      }),
+    });
+  }
+
+  async listDeployments(accountId: string, projectName: string): Promise<CloudflareDeployment[]> {
+    return this.request(`/accounts/${accountId}/pages/projects/${projectName}/deployments?per_page=10`);
   }
 }
