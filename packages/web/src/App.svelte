@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GitHubClient, type BlogConfig, type Owner } from '@blogit/core';
+  import { GitHubClient, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
   import { clearCloudflareToken, CloudflareClient, completeCloudflareOAuth, loadCloudflareToken, startCloudflareOAuth, type CloudflareAccount } from './lib/cloudflare';
@@ -13,6 +13,7 @@
   let cloudflareAccounts = $state<CloudflareAccount[]>([]);
   let cloudflareConnected = $state(false);
   let selectedCloudflareAccountId = $state('');
+  let selectedProvider = $state<DeploymentProvider>('github-pages');
   let cloudflareError = $state('');
   let loading = $state(true);
   let loginError = $state('');
@@ -25,6 +26,7 @@
 
   async function connectCloudflare() {
     cloudflareError = '';
+    sessionStorage.setItem('blogit:deployment-provider', 'cloudflare-pages');
     await startCloudflareOAuth();
   }
 
@@ -37,8 +39,18 @@
     cloudflareConnected = true;
   }
 
+  function selectProvider(provider: DeploymentProvider) {
+    selectedProvider = provider;
+    try {
+      sessionStorage.setItem('blogit:deployment-provider', provider);
+    } catch {}
+  }
+
   onMount(async () => {
     try {
+      selectedProvider = sessionStorage.getItem('blogit:deployment-provider') === 'cloudflare-pages'
+        ? 'cloudflare-pages'
+        : 'github-pages';
       const cfToken = await completeCloudflareOAuth();
       const savedCfToken = cfToken ?? loadCloudflareToken();
       if (savedCfToken) await loadCloudflare(savedCfToken);
@@ -66,6 +78,8 @@
     cloudflareAccounts = [];
     cloudflareConnected = false;
     selectedCloudflareAccountId = '';
+    selectedProvider = 'github-pages';
+    try { sessionStorage.removeItem('blogit:deployment-provider'); } catch {}
   }
 
   function toggleTheme() {
@@ -100,7 +114,7 @@
   {:else if !gh}
     <Login onSignIn={signIn} error={loginError} />
   {:else if !config}
-    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
+    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
   {:else}
     <Progress {gh} {config} onBack={() => (config = null)} />
   {/if}
