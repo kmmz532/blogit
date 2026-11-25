@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { GitHubClient, runSetup, steps, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { GitHubClient, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
   import { saveToken } from './lib/auth';
   import TokenHelp from './TokenHelp.svelte';
@@ -33,18 +34,73 @@
   async function start() {
     running = true;
     error = '';
+    const report = (id: StepId, s: StepStatus, e?: unknown) => {
+      status[id] = s;
+      if (e) error = e instanceof Error ? e.message : String(e);
+    };
     try {
-      await runSetup(client, config, setupState, (id, s, e) => {
-        status[id] = s;
-        runUrl = setupState.runUrl ?? '';
-        if (e) {
-          error = e instanceof Error ? e.message : String(e);
-          if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。下で権限を確認して入れ直してください）';
+      if (config.provider === 'cloudflare-pages') {
+        const token = loadCloudflareToken();
+        if (!token) throw new Error('Cloudflareに接続されていません。入力画面に戻って接続してください。');
+        if (!config.cloudflareAccountId) throw new Error('Cloudflareアカウントが選択されていません。');
+        const cf = new CloudflareClient(token);
+        const ref = { owner: config.owner, repo: config.repo };
+
+        report('create-repo', 'running');
+        if (!(await client.repoExists(ref))) {
+          await client.createRepo(config.owner, config.ownerType, config.repo, config.description);
+          for (let i = 0; i < 10 && !(await client.repoExists(ref)); i++) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-      });
-      siteUrl = setupState.siteUrl ?? '';
-    } catch {
-      // エラーは onProgress で表示済み
+        report('create-repo', 'done');
+
+        report('enable-pages', 'running');
+        const details = await client.getRepositoryDetails(ref);
+        report('enable-pages', 'done');
+
+        report('push-site', 'running');
+        const commitSha = await client.commitFiles(ref, details.defaultBranch, siteFiles(config), 'Set up blog with Blogit');
+        setupState.commitSha = commitSha;
+        report('push-site', 'done');
+
+        report('wait-deploy', 'running');
+        const project = await cf.createPagesProject(config.cloudflareAccountId, {
+          owner: config.owner, ownerId: details.ownerId, repoId: details.id,
+          repoName: config.repo, branch: details.defaultBranch,
+        });
+        const url = project.subdomain ? `https://${project.subdomain}/` : cloudflarePagesBaseURL(config.repo);
+        const deadline = Date.now() + 10 * 60 * 1000;
+        while (Date.now() < deadline) {
+          const deployments = await cf.listDeployments(config.cloudflareAccountId, config.repo.toLowerCase());
+          const deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha);
+          if (deployment) {
+            runUrl = deployment.url;
+            const stage = deployment.latest_stage;
+            if (stage?.status === 'success') {
+              siteUrl = url;
+              setupState.siteUrl = url;
+              break;
+            }
+            if (stage?.status === 'failure' || stage?.status === 'canceled') {
+              throw new Error(`Cloudflare Pages deployment ${stage.status}: ${deployment.url}`);
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+        if (!siteUrl) throw new Error(`Cloudflare Pages deployment timed out: ${runUrl}`);
+        report('wait-deploy', 'done');
+      } else {
+        await runSetup(client, config, setupState, (id, s, e) => {
+          status[id] = s;
+          runUrl = setupState.runUrl ?? '';
+          if (e) {
+            error = e instanceof Error ? e.message : String(e);
+            if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。下で権限を確認して入れ直してください）';
+          }
+        });
+        siteUrl = setupState.siteUrl ?? '';
+      }
+    } catch (e) {
+      if (!error) error = e instanceof Error ? e.message : String(e);
     } finally {
       running = false;
     }
