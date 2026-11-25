@@ -2,6 +2,7 @@
   import { GitHubClient, type BlogConfig, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
+  import { clearCloudflareToken, CloudflareClient, completeCloudflareOAuth, loadCloudflareToken, startCloudflareOAuth, type CloudflareAccount } from './lib/cloudflare';
   import Login from './Login.svelte';
   import Progress from './Progress.svelte';
   import SetupForm from './SetupForm.svelte';
@@ -9,6 +10,9 @@
   let gh = $state<GitHubClient | null>(null);
   let owners = $state<Owner[]>([]);
   let config = $state<BlogConfig | null>(null);
+  let cloudflareAccounts = $state<CloudflareAccount[]>([]);
+  let cloudflareConnected = $state(false);
+  let cloudflareError = $state('');
   let loading = $state(true);
   let loginError = $state('');
 
@@ -18,13 +22,31 @@
     gh = client;
   }
 
+  async function connectCloudflare() {
+    cloudflareError = '';
+    await startCloudflareOAuth();
+  }
+
+  async function loadCloudflare(token: string) {
+    const client = new CloudflareClient(token);
+    cloudflareAccounts = await client.listAccounts();
+    cloudflareConnected = true;
+  }
+
   onMount(async () => {
     try {
+      const cfToken = await completeCloudflareOAuth();
+      if (cfToken) await loadCloudflare(cfToken);
+      else {
+        const savedCfToken = loadCloudflareToken();
+        if (savedCfToken) await loadCloudflare(savedCfToken);
+      }
       const token = (await completeOAuth()) ?? loadToken();
       if (token) await signIn(token);
     } catch (e) {
-      clearToken();
       loginError = e instanceof Error ? e.message : String(e);
+      if (loadCloudflareToken()) cloudflareError = loginError;
+      else clearToken();
     } finally {
       loading = false;
     }
@@ -32,9 +54,12 @@
 
   function signOut() {
     clearToken();
+    clearCloudflareToken();
     gh = null;
     owners = [];
     config = null;
+    cloudflareAccounts = [];
+    cloudflareConnected = false;
   }
 
   function toggleTheme() {
@@ -69,12 +94,12 @@
   {:else if !gh}
     <Login onSignIn={signIn} error={loginError} />
   {:else if !config}
-    <SetupForm {gh} {owners} onSubmit={(c) => (config = c)} />
+    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} onConnectCloudflare={connectCloudflare} onSubmit={(c) => (config = c)} />
   {:else}
     <Progress {gh} {config} onBack={() => (config = null)} />
   {/if}
 </main>
 
 <footer class="footer">
-  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages
+  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages / Cloudflare Pages
 </footer>
