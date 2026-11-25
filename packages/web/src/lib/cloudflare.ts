@@ -100,6 +100,10 @@ export interface CloudflareDeployment {
   deployment_trigger?: { metadata?: { commit_hash?: string } };
 }
 
+class CloudflareApiError extends Error {
+  constructor(readonly status: number, message: string) { super(message); }
+}
+
 export class CloudflareClient {
   constructor(private readonly token: string) {}
 
@@ -116,7 +120,7 @@ export class CloudflareClient {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success !== true) {
       const message = data.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(', ');
-      throw new Error(message || `Cloudflare API error: ${response.status}`);
+      throw new CloudflareApiError(response.status, message || `Cloudflare API error: ${response.status}`);
     }
     return data.result as T;
   }
@@ -127,6 +131,15 @@ export class CloudflareClient {
       id: account.id,
       name: account.name,
     }));
+  }
+
+  async getPagesProject(accountId: string, projectName: string): Promise<{ subdomain?: string } | null> {
+    try {
+      return await this.request(`/accounts/${accountId}/pages/projects/${projectName}`);
+    } catch (error) {
+      if (error instanceof CloudflareApiError && error.status === 404) return null;
+      throw error;
+    }
   }
 
   async createPagesProject(accountId: string, repo: {
