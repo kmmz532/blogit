@@ -1,0 +1,13 @@
+{{ define "main" }}
+<h1 class="page-title">{{ T "search" }}</h1>
+<form id="search-form" class="search-box" role="search">
+  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+  <input id="q" type="search" placeholder="{{ T "search_placeholder" }}" aria-label="{{ T "search_keyword" }}">
+</form>
+<p id="search-count" class="card-meta" aria-live="polite"><span id="search-count-text"></span><span id="search-spinner" class="search-spinner" role="img" aria-label="{{ T "loading" }}" hidden></span></p>
+<div id="search-results" class="card-list" data-index-url="{{ "index.json" | relURL }}" data-msg-count="{{ T "search_count" }}" data-msg-count-partial="{{ T "search_count_partial" }}" data-msg-load-error="{{ T "search_load_error" }}"></div>
+{{ end }}
+
+{{ define "scripts" }}
+<script type="module" src="{{ "js/search.js" | relURL }}"></script>
+{{ end }}

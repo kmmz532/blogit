@@ -1,0 +1,22 @@
+{{ define "main" }}
+{{- if eq .Kind "term" }}
+<h1 class="page-title">{{ if eq .Data.Singular "tag" }}#{{ end }}{{ T "term_posts" (dict "Name" .Title) }}</h1>
+{{- $pag := .Paginate .Pages }}
+<div class="card-list">
+  {{- range $pag.Pages }}
+  {{- partial "post-card.html" . }}
+  {{- else }}
+  <p>{{ T "no_posts" }}</p>
+  {{- end }}
+</div>
+{{- partial "pager.html" $pag }}
+{{- else }}
+<h1 class="page-title">{{ .Title }}</h1>
+<ul class="term-list">
+  {{- range .Data.Terms.Alphabetical }}
+  <li><a href="{{ .Page.RelPermalink }}">{{ .Page.Title }}</a> <span class="card-meta">({{ .Count }})</span></li>
+  {{- end }}
+</ul>
+{{- end }}
+{{ end }}
+
