@@ -107,12 +107,12 @@ jobs:
           extended: true
       - uses: actions/cache@v4
         with:
-          path: ${${{ runner.temp }}/hugo_cache}
-          key: hugo-${${{ hashFiles('assets/**', 'hugo.toml', 'go.sum') }}
+          path: \${{ runner.temp }}/hugo_cache}
+          key: hugo-\${{ hashFiles('assets/**', 'hugo.toml', 'go.sum') }}
           restore-keys: hugo-
       - run: hugo --minify --gc
         env:
-          HUGO_CACHEDIR: ${${{ runner.temp }}/hugo_cache}
+          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -124,7 +124,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: github-pages
-      url: ${${{ steps.deployment.outputs.page_url }}
+      url: \${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
