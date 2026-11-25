@@ -50,7 +50,10 @@ export const steps: Step[] = [
     done: async ({ state }) => state.commitSha !== undefined,
     async run({ gh, config, ref, state }) {
       const branch = await gh.getDefaultBranch(ref);
-      state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config), 'Set up blog with Blogit');
+      // 独自ドメイン（例: ユーザーの github.io に設定したドメイン）があれば、その URL を baseURL にする
+      const pagesUrl = await gh.getPagesUrl(ref);
+      const baseURL = pagesUrl ? pagesUrl.replace(/\/?$/, '/') : undefined;
+      state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config, { baseURL }), 'Set up blog with Blogit');
     },
   },
   {

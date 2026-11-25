@@ -12,10 +12,11 @@ export function pagesBaseURL(owner: string, repo: string): string {
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
-export function hugoToml(c: BlogConfig): string {
+// baseURL は GitHub Pages が返す実際の公開 URL（独自ドメインのときはそのドメイン）。省略時は github.io の URL
+export function hugoToml(c: BlogConfig, baseURL = pagesBaseURL(c.owner, c.repo)): string {
   const repo = `${c.owner}/${c.repo}`;
   return `title = ${str(c.title)}
-baseURL = ${str(pagesBaseURL(c.owner, c.repo))}
+baseURL = ${str(baseURL)}
 languageCode = ${str(c.language)}
 # 未設定だと en 扱いになり、画面の文言が英語になる
 defaultContentLanguage = ${str(c.language)}
@@ -145,27 +146,27 @@ ${
   };
 }
 
-function readme(c: BlogConfig): string {
+function readme(c: BlogConfig, baseURL: string): string {
   return `# ${c.title}
 
 ${c.description}
 
 [Blogit](https://github.com/kmmz532/blogit) で作成した Hugo ブログです。
 
-- 公開 URL: ${pagesBaseURL(c.owner, c.repo)}
-- 記事の編集: ${pagesBaseURL(c.owner, c.repo)}admin/
+- 公開 URL: ${baseURL}
+- 記事の編集: ${baseURL}admin/
 `;
 }
 
 // 単一リポジトリ型のサイト一式
-export function siteFiles(c: BlogConfig, now = new Date()): FileMap {
+export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = pagesBaseURL(c.owner, c.repo) } = {}): FileMap {
   const post = firstPost(c, now);
   return {
-    'hugo.toml': hugoToml(c),
+    'hugo.toml': hugoToml(c, baseURL),
     'go.mod': goMod(c),
     '.github/workflows/deploy.yml': deployWorkflow(),
     '.gitignore': 'public/\nresources/\n.hugo_build.lock\n',
-    'README.md': readme(c),
+    'README.md': readme(c, baseURL),
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };

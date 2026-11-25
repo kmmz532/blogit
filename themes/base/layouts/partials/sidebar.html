@@ -17,7 +17,7 @@
 
   <section class="sidebar-card">
     <h2 class="sidebar-title">{{ T "search" }}</h2>
-    <form class="search-box" action="{{ "/search/" | relURL }}" method="get" role="search">
+    <form class="search-box" action="{{ "search/" | relURL }}" method="get" role="search">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
       <input type="search" name="q" aria-label="{{ T "search_keyword" }}" placeholder="{{ T "search" }}">
     </form>
@@ -42,7 +42,7 @@
       <a class="chip" href="{{ .Page.RelPermalink }}">#{{ .Page.Title }}</a>
       {{- end }}
     </div>
-    <a class="sidebar-more" href="{{ "/tags/" | relURL }}">{{ T "all_tags" }}</a>
+    <a class="sidebar-more" href="{{ "tags/" | relURL }}">{{ T "all_tags" }}</a>
   </section>
 
   <section class="sidebar-card">
@@ -62,7 +62,7 @@
     <ul class="sidebar-list">
       {{- range first 12 ((where site.RegularPages "Section" "posts").GroupByDate "2006-01") }}
       <li>
-        <a href="{{ "/archives/" | relURL }}#{{ .Key }}">{{ with time (printf "%s-01" .Key) }}{{ T "year_month" (dict "Year" .Year "Month" (.Format "1") "MonthName" (.Format "January")) }}{{ end }}</a>
+        <a href="{{ "archives/" | relURL }}#{{ .Key }}">{{ with time (printf "%s-01" .Key) }}{{ T "year_month" (dict "Year" .Year "Month" (.Format "1") "MonthName" (.Format "January")) }}{{ end }}</a>
         <span class="count">({{ len .Pages }})</span>
       </li>
       {{- end }}

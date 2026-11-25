@@ -28,10 +28,11 @@ test('hugoToml: escapes strings and imports the chosen theme', () => {
   assert.match(toml, /repo = "Kmmz532\/my-blog"/);
 });
 
-test('siteFiles: includes workflow and a first post', () => {
-  const files = siteFiles(config, new Date('2026-11-25T00:00:00Z'));
+test('siteFiles: includes workflow and a first post, and uses the given baseURL', () => {
+  const files = siteFiles(config, { now: new Date('2026-11-25T00:00:00Z'), baseURL: 'https://kmmz.jp/my-blog/' });
   assert.ok(files['.github/workflows/deploy.yml'].includes('${{ steps.deployment.outputs.page_url }}'));
   assert.ok('content/posts/2026-11-25-hello.md' in files);
+  assert.match(files['hugo.toml'], /^baseURL = "https:\/\/kmmz\.jp\/my-blog\/"$/m);
 });
 
 test('validateRepoName', () => {

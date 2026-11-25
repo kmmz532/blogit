@@ -1,8 +1,8 @@
 <header class="header">
   <div class="header-inner">
-    <a class="title" href="{{ "/" | relURL }}">{{ site.Params.headerTitle | default site.Title }}</a>
+    <a class="title" href="{{ "" | relURL }}">{{ site.Params.headerTitle | default site.Title }}</a>
     <div class="header-actions">
-      <a class="icon-button" href="{{ "/search/" | relURL }}" aria-label="{{ T "search" }}" title="{{ T "search" }}">
+      <a class="icon-button" href="{{ "search/" | relURL }}" aria-label="{{ T "search" }}" title="{{ T "search" }}">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
       </a>
       {{- if and (eq .Kind "page") (eq .Section "posts") }}
