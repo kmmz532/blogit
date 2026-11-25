@@ -12,6 +12,7 @@
   let config = $state<BlogConfig | null>(null);
   let cloudflareAccounts = $state<CloudflareAccount[]>([]);
   let cloudflareConnected = $state(false);
+  let selectedCloudflareAccountId = $state('');
   let cloudflareError = $state('');
   let loading = $state(true);
   let loginError = $state('');
@@ -30,6 +31,9 @@
   async function loadCloudflare(token: string) {
     const client = new CloudflareClient(token);
     cloudflareAccounts = await client.listAccounts();
+    if (!cloudflareAccounts.some((account) => account.id === selectedCloudflareAccountId)) {
+      selectedCloudflareAccountId = cloudflareAccounts[0]?.id ?? '';
+    }
     cloudflareConnected = true;
   }
 
@@ -61,6 +65,7 @@
     config = null;
     cloudflareAccounts = [];
     cloudflareConnected = false;
+    selectedCloudflareAccountId = '';
   }
 
   function toggleTheme() {
@@ -95,7 +100,7 @@
   {:else if !gh}
     <Login onSignIn={signIn} error={loginError} />
   {:else if !config}
-    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} onConnectCloudflare={connectCloudflare} onSubmit={(c) => (config = c)} />
+    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
   {:else}
     <Progress {gh} {config} onBack={() => (config = null)} />
   {/if}
