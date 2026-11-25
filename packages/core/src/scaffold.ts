@@ -10,7 +10,8 @@ export function pagesBaseURL(owner: string, repo: string): string {
 }
 
 export function cloudflarePagesBaseURL(repo: string): string {
-  return `https://${repo.toLowerCase()}.pages.dev/`;
+  const projectName = repo.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 58);
+  return `https://${projectName}.pages.dev/`;
 }
 
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
