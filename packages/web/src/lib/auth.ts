@@ -4,7 +4,8 @@ const TOKEN_KEY = 'blogit:token';
 const STATE_KEY = 'blogit:oauth-state';
 
 const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined;
-const workerUrl = import.meta.env.VITE_AUTH_WORKER_URL as string | undefined;
+// 末尾の / は付いていてもいなくてもよい
+const workerUrl = (import.meta.env.VITE_AUTH_WORKER_URL as string | undefined)?.replace(//+$/, '');
 
 // リポジトリ作成・ワークフローの追加・所属 Organization の取得に必要な権限
 const SCOPES = ['public_repo', 'workflow', 'read:org'];
