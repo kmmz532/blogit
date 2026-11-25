@@ -178,6 +178,6 @@ export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = c.provide
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };
-  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
+  if (c.provider !== 'cloudflare-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
   return files;
 }
