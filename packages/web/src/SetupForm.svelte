@@ -3,14 +3,16 @@
   import type { CloudflareAccount } from './lib/cloudflare';
 
   let {
-    gh, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, onConnectCloudflare, onSubmit,
+    gh, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, selectedCloudflareAccountId, onConnectCloudflare, onSelectCloudflareAccount, onSubmit,
   }: {
     gh: GitHubClient;
     owners: Owner[];
     cloudflareAccounts: CloudflareAccount[];
     cloudflareConnected: boolean;
     cloudflareError: string;
+    selectedCloudflareAccountId: string;
     onConnectCloudflare: () => Promise<void>;
+    onSelectCloudflareAccount: (id: string) => void;
     onSubmit: (c: BlogConfig) => void;
   } = $props();
 
@@ -74,10 +76,19 @@
 <section class="card stack">
   <h2 class="section-title">Cloudflare 接続</h2>
   {#if cloudflareConnected}
-    <p class="hint">接続済み：{cloudflareAccounts.length} 個のアカウントを取得しました。</p>
-    {#each cloudflareAccounts as account (account.id)}
-      <p>{account.name}</p>
-    {/each}
+    <p class="hint">Cloudflare Pages の公開先アカウントを選択してください。</p>
+    {#if cloudflareAccounts.length > 0}
+      <div class="field">
+        <label for="cloudflare-account">Cloudflare アカウント</label>
+        <select id="cloudflare-account" value={selectedCloudflareAccountId} onchange={(event) => onSelectCloudflareAccount((event.currentTarget as HTMLSelectElement).value)}>
+          {#each cloudflareAccounts as account (account.id)}
+            <option value={account.id}>{account.name}</option>
+          {/each}
+        </select>
+      </div>
+    {:else}
+      <p class="hint">利用可能なCloudflareアカウントがありません。</p>
+    {/if}
   {:else}
     <p class="hint">Cloudflare Pages を公開先にする場合は、Cloudflare アカウントを接続します。</p>
     <div class="actions">
