@@ -33,7 +33,9 @@ function validCloudflareRoute(url, method) {
     return url.search === '';
   }
   const match = path.match(/^\/cloudflare\/accounts\/([a-f\d]{32})\/pages\/projects\/([a-z0-9-]+)(\/deployments)?$/);
-  if (!match || method !== 'GET') return false;
+  if (!match) return false;
+  if (match[3] && method === 'POST') return url.search === '';
+  if (method !== 'GET') return false;
   if (match[3]) {
     return url.searchParams.size <= 1
       && (!url.searchParams.has('per_page') || /^(?:[1-9]|[1-4][0-9]|50)$/.test(url.searchParams.get('per_page')));
@@ -64,18 +66,36 @@ async function handleCloudflare(request, cors) {
       return json({ error: 'content_type_must_be_json' }, 415, cors);
     }
     if (contentLength > MAX_BODY_BYTES) return json({ error: 'request_body_too_large' }, 413, cors);
-    body = await request.text();
-    if (new TextEncoder().encode(body).byteLength > MAX_BODY_BYTES) {
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
       return json({ error: 'request_body_too_large' }, 413, cors);
     }
+    let input;
     try {
-      if (!body || typeof JSON.parse(body) !== 'object' || Array.isArray(JSON.parse(body))) {
-        return json({ error: 'invalid_json_body' }, 400, cors);
-      }
+      input = JSON.parse(rawBody);
+      if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('invalid');
     } catch {
       return json({ error: 'invalid_json_body' }, 400, cors);
     }
-    headers.set('Content-Type', 'application/json');
+
+    // Pages の Git 連携デプロイ API は multipart/form-data を要求する。
+    // Worker 側で FormData を組み立て、boundary は fetch に自動生成させる。
+    if (url.pathname.endsWith('/deployments')) {
+      if (typeof input.branch !== 'string' || !/^[A-Za-z0-9._/-]{1,255}$/.test(input.branch)) {
+        return json({ error: 'invalid_branch' }, 400, cors);
+      }
+      if (typeof input.commit_hash !== 'string' || !/^[a-f0-9]{7,64}$/i.test(input.commit_hash)) {
+        return json({ error: 'invalid_commit_hash' }, 400, cors);
+      }
+      body = new FormData();
+      body.set('branch', input.branch);
+      body.set('commit_hash', input.commit_hash);
+      body.set('commit_message', typeof input.commit_message === 'string' ? input.commit_message.slice(0, 500) : 'Blogit initial deployment');
+      body.set('commit_dirty', 'false');
+    } else {
+      body = rawBody;
+      headers.set('Content-Type', 'application/json');
+    }
   }
 
   const apiPath = url.pathname.slice('/cloudflare'.length);
