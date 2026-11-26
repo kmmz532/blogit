@@ -143,15 +143,39 @@ ${admin}
 `;
 }
 
-// 依存の版は初回ビルドで Hugo が解決する（その後は hugo mod get で固定する）
+// コミットの SHA と日時から Go modules の疑似バージョンを作る（例: v0.0.0-20261126012345-0123456789ab）
+export function pseudoVersion(sha: string, date: string): string {
+  const time = new Date(date).toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  return `v0.0.0-${time}-${sha.slice(0, 12)}`;
+}
+
+// テーマのリポジトリの既定のブランチの最新コミットから、テーマを固定する版を取得する
+export async function fetchThemeVersion(): Promise<string> {
+  const res = await fetch('https://api.github.com/repos/kmmz532/blogit/commits/main', {
+    headers: { Accept: 'application/vnd.github+json' },
+  });
+  if (!res.ok) throw new Error(`GET theme version: ${res.status} ${res.statusText}`);
+  const data = await res.json() as { sha: string; commit: { committer: { date: string } } };
+  return pseudoVersion(data.sha, data.commit.committer.date);
+}
+
+// themeVersion を指定した場合はテーマ（と共通部分の base）をその版に固定する。省略時はビルドのたびに最新の版を利用する
 export function goMod(c: BlogConfig): string {
   const host = isGitLabRepo(c)
     ? new URL(normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM).host
     : 'github.com';
+  const require = c.themeVersion
+    ? `
+require (
+	${THEME_MODULE}/base ${c.themeVersion}
+	${THEME_MODULE}/${c.theme} ${c.themeVersion}
+)
+`
+    : '';
   return `module ${host}/${c.owner}/${c.repo}
 
 go 1.24.0
-`;
+${require}`;
 }
 
 export function deployWorkflow(branch = 'main'): string {

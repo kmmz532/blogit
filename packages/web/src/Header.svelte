@@ -18,7 +18,7 @@
     <a class="logo" href="./">Blogit</a>
     <div class="header-actions">
       <button class="icon-button lang-button" type="button" onclick={() => setLocale(i18n.locale === 'ja' ? 'en' : 'ja')} aria-label={t('switchLanguageLabel')} title={t('switchLanguageLabel')}>
-        <i class="fa-solid fa-language" aria-hidden="true"></i><span>{t('switchLanguage')}</span>
+        {t('switchLanguage')}
       </button>
       {#if user && onSignOut}
         <img class="avatar" src={user.avatarUrl} alt={user.login} title={user.login} />

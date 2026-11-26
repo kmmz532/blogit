@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeGitLabUrl } from './gitlab.ts';
-import { validateLinkUrl, gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
+import { validateLinkUrl, gitlabPagesBaseURL, goMod, hugoToml, pseudoVersion, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
@@ -146,4 +146,18 @@ test('hugoToml: link names follow the blog language', () => {
   const links = [{ icon: 'website', url: 'https://example.jp/' }];
   assert.match(hugoToml({ ...config, links }), /name = "Webサイト"/);
   assert.match(hugoToml({ ...config, language: 'en', links }), /name = "Website"/);
+});
+
+test('pseudoVersion: builds a Go pseudo-version from the commit time in UTC', () => {
+  assert.equal(
+    pseudoVersion('0123456789abcdef0123456789abcdef01234567', '2026-11-26T09:08:07+09:00'),
+    'v0.0.0-20261126000807-0123456789ab',
+  );
+});
+
+test('goMod: requires no theme by default and pins the theme and base when a version is given', () => {
+  assert.doesNotMatch(goMod(config), /require/);
+  const pinned = goMod({ ...config, themeVersion: 'v0.0.0-20261126000807-0123456789ab' });
+  assert.match(pinned, /github\.com\/kmmz532\/blogit\/themes\/base v0\.0\.0-20261126000807-0123456789ab/);
+  assert.match(pinned, /github\.com\/kmmz532\/blogit\/themes\/warm v0\.0\.0-20261126000807-0123456789ab/);
 });

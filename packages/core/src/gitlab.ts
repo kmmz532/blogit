@@ -134,6 +134,18 @@ export class GitLabClient {
     return toml !== null && toml.includes('[params.ghAdmin]') && toml.includes(`siteRepo = "${ref.owner}/${ref.repo}"`);
   }
 
+  // ファイルが 1 つもないか。セットアップがファイルの追加前に止まった場合の再開に使う
+  async isEmptyRepo(ref: RepoRef): Promise<boolean> {
+    try {
+      const items = await this.request<unknown[]>('GET', `/projects/${GitLabClient.project(ref)}/repository/tree?per_page=1`);
+      return items.length === 0;
+    } catch (e) {
+      // リポジトリが空のときは 404 が返る
+      if (e instanceof GitLabError && e.status === 404) return true;
+      throw e;
+    }
+  }
+
   async getBranchHeadSha(ref: RepoRef, branch: string): Promise<string> {
     const b = await this.request<{ commit: { id: string } }>('GET', `/projects/${GitLabClient.project(ref)}/repository/branches/${encodeURIComponent(branch)}`);
     return b.commit.id;

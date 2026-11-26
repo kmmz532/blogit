@@ -86,6 +86,21 @@ export class GitHubClient {
     return toml !== null && toml.includes('[params.ghAdmin]') && toml.includes(`siteRepo = "${ref.owner}/${ref.repo}"`);
   }
 
+  // 作成直後のまま（ファイルが自動作成された README.md だけ）か。セットアップがファイルの追加前に止まった場合の再開に使う
+  async isEmptyRepo(ref: RepoRef): Promise<boolean> {
+    try {
+      const items = await this.request<{ name: string; type: string }[]>('GET', `/repos/${ref.owner}/${ref.repo}/contents/`);
+      if (items.some((i) => i.name !== 'README.md')) return false;
+      if (items.length === 0) return true;
+      const readme = await this.getFileText(ref, 'README.md');
+      return readme !== null && readme.startsWith(`# ${ref.repo}`);
+    } catch (e) {
+      // 空のリポジトリ（コミットがない）は 404 が返る
+      if (e instanceof GitHubError && e.status === 404) return true;
+      throw e;
+    }
+  }
+
   async getBranchHeadSha({ owner, repo }: RepoRef, branch: string): Promise<string> {
     const r = await this.request<{ object: { sha: string } }>('GET', `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
     return r.object.sha;

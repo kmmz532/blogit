@@ -28,6 +28,8 @@ export interface BlogConfig {
   // true ならリポジトリを非公開で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;
+  // テーマの版を固定するときの Go modules の版（例: v0.0.0-20261126000000-0123456789ab）。省略時は最新の版を利用し、自動で更新される
+  themeVersion?: string;
   language: Language;
 }
 
