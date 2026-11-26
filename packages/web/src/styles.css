@@ -151,7 +151,15 @@ a:hover {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+}
+
+/* セットアップのカードの見出しと中身の間隔。折りたたみ（details）のカードとそろえる */
+.section-body {
+  margin-top: 0.75rem;
+}
+
+summary.section-title {
+  cursor: pointer;
 }
 
 .card {

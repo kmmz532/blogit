@@ -158,94 +158,97 @@
 <h1 class="page-title">{t('setupTitle')}</h1>
 
 <form class="stack" onsubmit={submit}>
-  <section class="card stack">
+  <section class="card">
     <h2 class="section-title">{t('sectionDestination')}</h2>
-    <fieldset class="field">
-      <legend>{t('hostingService')}</legend>
-      <div class="choices">
-        {#if isGitLab}
-        <label class="choice">
-          <input type="radio" name="provider" value="gitlab-pages" checked={selectedProvider === 'gitlab-pages'} onchange={() => onSelectProvider('gitlab-pages')} />
-          <span class="choice-name">GitLab Pages</span>
-          <span class="hint">{t('viaGitLabCi')}</span>
-        </label>
-        {:else}
-        <label class="choice">
-          <input type="radio" name="provider" value="github-pages" checked={selectedProvider === 'github-pages'} onchange={() => onSelectProvider('github-pages')} />
-          <span class="choice-name">GitHub Pages</span>
-          <span class="hint">{t('viaGitHubActions')}</span>
-        </label>
-        {/if}
-        {#if cloudflareAvailable}
-        <label class="choice">
-          <input type="radio" name="provider" value="cloudflare-pages" checked={selectedProvider === 'cloudflare-pages'} onchange={() => onSelectProvider('cloudflare-pages')} />
-          <span class="choice-name">Cloudflare Pages</span>
-          <span class="hint">{t('viaCloudflare')}</span>
-        </label>
-        {/if}
-      </div>
-    </fieldset>
-    {#if selectedProvider === 'cloudflare-pages'}
-      <div class="stack">
-        {#if cloudflareConnected}
-          {#if cloudflareAccounts.length > 0}
-            <div class="field">
-              <label for="cloudflare-account">{t('cloudflareAccount')}</label>
-              <select id="cloudflare-account" value={selectedCloudflareAccountId} onchange={(event) => onSelectCloudflareAccount((event.currentTarget as HTMLSelectElement).value)}>
-                {#each cloudflareAccounts as account (account.id)}
-                  <option value={account.id}>{account.name}</option>
-                {/each}
-              </select>
-            </div>
+    <div class="stack section-body">
+      <fieldset class="field" aria-label={t('hostingService')}>
+        <div class="choices">
+          {#if isGitLab}
+          <label class="choice">
+            <input type="radio" name="provider" value="gitlab-pages" checked={selectedProvider === 'gitlab-pages'} onchange={() => onSelectProvider('gitlab-pages')} />
+            <span class="choice-name">GitLab Pages</span>
+            <span class="hint">{t('viaGitLabCi')}</span>
+          </label>
           {:else}
-            <p class="hint">{t('noCloudflareAccounts')}</p>
+          <label class="choice">
+            <input type="radio" name="provider" value="github-pages" checked={selectedProvider === 'github-pages'} onchange={() => onSelectProvider('github-pages')} />
+            <span class="choice-name">GitHub Pages</span>
+            <span class="hint">{t('viaGitHubActions')}</span>
+          </label>
           {/if}
-        {:else}
-          <div class="actions">
-            <button class="button" type="button" onclick={connect} disabled={connecting}>
-              {t(connecting ? 'connecting' : 'connectCloudflare')}
-            </button>
-          </div>
-        {/if}
-        {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
-        <p class="hint">{t('cloudflareGitHint', { provider: isGitLab ? 'GitLab' : 'GitHub' })}</p>
-      </div>
-    {/if}
+          {#if cloudflareAvailable}
+          <label class="choice">
+            <input type="radio" name="provider" value="cloudflare-pages" checked={selectedProvider === 'cloudflare-pages'} onchange={() => onSelectProvider('cloudflare-pages')} />
+            <span class="choice-name">Cloudflare Pages</span>
+            <span class="hint">{t('viaCloudflare')}</span>
+          </label>
+          {/if}
+        </div>
+      </fieldset>
+      {#if selectedProvider === 'cloudflare-pages'}
+        <div class="stack">
+          {#if cloudflareConnected}
+            {#if cloudflareAccounts.length > 0}
+              <div class="field">
+                <label for="cloudflare-account">{t('cloudflareAccount')}</label>
+                <select id="cloudflare-account" value={selectedCloudflareAccountId} onchange={(event) => onSelectCloudflareAccount((event.currentTarget as HTMLSelectElement).value)}>
+                  {#each cloudflareAccounts as account (account.id)}
+                    <option value={account.id}>{account.name}</option>
+                  {/each}
+                </select>
+              </div>
+            {:else}
+              <p class="hint">{t('noCloudflareAccounts')}</p>
+            {/if}
+          {:else}
+            <div class="actions">
+              <button class="button" type="button" onclick={connect} disabled={connecting}>
+                {t(connecting ? 'connecting' : 'connectCloudflare')}
+              </button>
+            </div>
+          {/if}
+          {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
+          <p class="hint">{t('cloudflareGitHint', { provider: isGitLab ? 'GitLab' : 'GitHub' })}</p>
+        </div>
+      {/if}
+    </div>
   </section>
 
-  <section class="card stack">
+  <section class="card">
     <h2 class="section-title">{t('sectionBlog')}</h2>
-    <div class="field">
-      <label for="title">{t('blogName')}</label>
-      <input id="title" type="text" bind:value={title} required />
-    </div>
-    <div class="field">
-      <label for="repo">{t('destination')}</label>
-      <div class="repo-input">
-        <select id="owner" bind:value={owner} aria-label={t('account')} style="width: auto">
-          {#each owners as o (o.login)}
-            <option value={o.login}>{o.login}</option>
-          {/each}
-        </select>
-        <span>/</span>
-        <input id="repo" type="text" bind:value={repo} required />
+    <div class="stack section-body">
+      <div class="field">
+        <label for="title">{t('blogName')}</label>
+        <input id="title" type="text" bind:value={title} required />
       </div>
-      {#if url}
-        <p class="hint">{t('publicUrl', { url })}</p>
-      {:else if selectedProvider === 'cloudflare-pages'}
-        <p class="error-text">{t('cloudflareNameInvalid')}</p>
-      {:else if repoValid}
-        <p class="hint">{t('publicUrlLater')}</p>
-      {:else}
-        <p class="error-text">{t(isGitLab ? 'projectNameInvalid' : 'repoNameInvalid')}</p>
-      {/if}
+      <div class="field">
+        <label for="repo">{t('destination')}</label>
+        <div class="repo-input">
+          <select id="owner" bind:value={owner} aria-label={t('account')} style="width: auto">
+            {#each owners as o (o.login)}
+              <option value={o.login}>{o.login}</option>
+            {/each}
+          </select>
+          <span>/</span>
+          <input id="repo" type="text" bind:value={repo} required />
+        </div>
+        {#if url}
+          <p class="hint">{t('publicUrl', { url })}</p>
+        {:else if selectedProvider === 'cloudflare-pages'}
+          <p class="error-text">{t('cloudflareNameInvalid')}</p>
+        {:else if repoValid}
+          <p class="hint">{t('publicUrlLater')}</p>
+        {:else}
+          <p class="error-text">{t(isGitLab ? 'projectNameInvalid' : 'repoNameInvalid')}</p>
+        {/if}
+      </div>
     </div>
   </section>
 
   <!-- 見た目は最初は開いておき、選び終えたら閉じられるようにする -->
   <details class="card" open>
-    <summary>{t('sectionAppearance')}</summary>
-    <div class="stack" style="margin-top: 1rem">
+    <summary class="section-title">{t('sectionAppearance')}</summary>
+    <div class="stack section-body">
       <fieldset class="field">
         <legend>{t('theme')}</legend>
         <div class="choices">
@@ -271,8 +274,8 @@
 
   <!-- 既定値のままでよい項目は折りたたむ -->
   <details class="card">
-    <summary>{t('advanced')}</summary>
-    <div class="stack" style="margin-top: 1rem">
+    <summary class="section-title">{t('advanced')}</summary>
+    <div class="stack section-body">
       <div class="field">
         <label for="description">{t('description')}</label>
         <input id="description" type="text" bind:value={description} />
