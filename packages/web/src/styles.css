@@ -263,15 +263,6 @@ fieldset {
   font-weight: 600;
 }
 
-.choice-thumb {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top left;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-}
-
 /* テーマのプレビュー（スクリーンショット） */
 .preview {
   display: grid;
