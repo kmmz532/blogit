@@ -39,11 +39,8 @@
 
   <section>
     <h2>公開先</h2>
-    <ul>
-      <li><strong>GitHub Pages</strong>: GitHub Actionsでビルドし、公開します。独自ドメインを設定できます。</li>
-      <li><strong>GitLab Pages</strong>: GitLab CI/CDでビルドし、公開します。セルフホストのGitLabにも対応します。</li>
-      <li><strong>Cloudflare Pages</strong>: CloudflareのGit連携でビルドし、公開します。Cloudflareのアカウントが必要です。</li>
-    </ul>
+    <p>GitHub Pages、GitLab Pages、Cloudflare Pagesのいずれかに公開できます。ビルドはそれぞれGitHub Actions、GitLab CI/CD、CloudflareのGit連携で行います。</p>
+    <p>作成時に独自ドメインを設定できるのはGitHub Pagesのみです。セルフホストのGitLabでは、GitLab Pagesのみ利用できます。Cloudflare Pagesを利用するには、Cloudflareのアカウントが必要です。</p>
   </section>
 
   <section>
