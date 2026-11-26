@@ -4,10 +4,12 @@ import type { BlogConfig, FileMap } from './types.ts';
 export const HUGO_VERSION = '0.141.0';
 const THEME_MODULE = 'github.com/kmmz532/blogit/themes';
 
-// <owner>.github.io という名前のリポジトリはドメイン直下、それ以外は /<repo>/ に公開される
-export function pagesBaseURL(owner: string, repo: string): string {
+// <owner>.github.io という名前のリポジトリはドメイン直下、それ以外は /<repo>/ に公開される。
+// userSiteOrigin は <owner>.github.io に設定された独自ドメインのオリジン（例: https://example.jp）。設定時は /<repo>/ もそのドメイン配下になる
+export function pagesBaseURL(owner: string, repo: string, userSiteOrigin?: string | null): string {
   const host = `${owner.toLowerCase()}.github.io`;
-  return repo.toLowerCase() === host ? `https://${host}/` : `https://${host}/${repo}/`;
+  const origin = userSiteOrigin ? userSiteOrigin.replace(/\/+$/, '') : `https://${host}`;
+  return repo.toLowerCase() === host ? `${origin}/` : `${origin}/${repo}/`;
 }
 
 export function cloudflarePagesBaseURL(repo: string): string {
@@ -142,12 +144,15 @@ jobs:
           extended: true
       - uses: actions/cache@v4
         with:
-          path: \${{ runner.temp }}/hugo_cache}
+          path: \${{ runner.temp }}/hugo_cache
           key: hugo-\${{ hashFiles('assets/**', 'hugo.toml', 'go.sum') }}
           restore-keys: hugo-
-      - run: hugo --minify --gc
+      # 公開 URL は GitHub が決定する（独自ドメインや、<owner>.github.io に設定した独自ドメイン配下の /<repo>/ に対応する）
+      - id: pages
+        uses: actions/configure-pages@v5
+      - run: hugo --minify --gc --baseURL "\${{ steps.pages.outputs.base_url }}/"
         env:
-          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache}
+          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public

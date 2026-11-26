@@ -110,6 +110,19 @@ export class GitHubClient {
     }
   }
 
+  // <owner>.github.io に設定された独自ドメインのオリジン。未設定・取得できない（権限がない等）場合は null
+  async getUserSiteOrigin(owner: string): Promise<string | null> {
+    try {
+      const p = await this.request<{ cname: string | null; https_enforced?: boolean }>(
+        'GET',
+        `/repos/${owner}/${owner}.github.io/pages`,
+      );
+      return p.cname ? `${p.https_enforced === false ? 'http' : 'https'}://${p.cname}` : null;
+    } catch {
+      return null;
+    }
+  }
+
   // 指定コミットで起動したワークフローの実行（まだ無ければ null）
   async findWorkflowRun({ owner, repo }: RepoRef, sha: string): Promise<WorkflowRun | null> {
     const r = await this.request<{ workflow_runs: WorkflowRun[] }>(

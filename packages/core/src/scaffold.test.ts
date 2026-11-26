@@ -20,6 +20,8 @@ const config: BlogConfig = {
 test('pagesBaseURL: project page and user page', () => {
   assert.equal(pagesBaseURL('Kmmz532', 'my-blog'), 'https://kmmz532.github.io/my-blog/');
   assert.equal(pagesBaseURL('Kmmz532', 'kmmz532.github.io'), 'https://kmmz532.github.io/');
+  assert.equal(pagesBaseURL('alice', 'blog', 'https://example.jp'), 'https://example.jp/blog/');
+  assert.equal(pagesBaseURL('alice', 'alice.github.io', 'https://example.jp/'), 'https://example.jp/');
 });
 
 test('hugoToml: escapes strings and imports the chosen theme', () => {
@@ -33,6 +35,8 @@ test('hugoToml: escapes strings and imports the chosen theme', () => {
 test('siteFiles: includes workflow and a first post, and uses the given baseURL', () => {
   const files = siteFiles(config, { now: new Date('2026-11-25T00:00:00Z'), baseURL: 'https://kmmz.jp/my-blog/' });
   assert.ok(files['.github/workflows/deploy.yml'].includes('${{ steps.deployment.outputs.page_url }}'));
+  assert.ok(files['.github/workflows/deploy.yml'].includes('--baseURL "${{ steps.pages.outputs.base_url }}/"'));
+  assert.ok(!files['.github/workflows/deploy.yml'].includes('hugo_cache}'));
   assert.ok('content/posts/2026-11-25-hello.md' in files);
   assert.match(files['hugo.toml'], /^baseURL = "https:\/\/kmmz\.jp\/my-blog\/"$/m);
 });

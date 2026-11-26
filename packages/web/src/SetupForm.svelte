@@ -7,7 +7,7 @@
   }: {
     platform: 'github' | 'gitlab';
     // GitHubClient と GitLabClient の共通部分だけを使う
-    client: { repoExists(ref: RepoRef): Promise<boolean> };
+    client: { repoExists(ref: RepoRef): Promise<boolean>; getUserSiteOrigin?(owner: string): Promise<string | null> };
     gitlabUrl?: string;
     owners: Owner[];
     cloudflareAccounts: CloudflareAccount[];
@@ -50,11 +50,19 @@
   const cloudflareAvailable = $derived(!isGitLab || gitlabUrl === GITLAB_COM);
   const repoValid = $derived(isGitLab ? validateGitLabProjectPath(repo) : validateRepoName(repo));
   const cloudflareRepoValid = $derived(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(repo));
+  // GitHub Pages の公開先の予想に使う、<owner>.github.io の独自ドメイン（owner ごとに 1 回だけ取得する）
+  let userSiteOrigins = $state<Record<string, string | null>>({});
+  $effect(() => {
+    const o = owner;
+    if (isGitLab || selectedProvider !== 'github-pages' || !client.getUserSiteOrigin || o in userSiteOrigins) return;
+    userSiteOrigins[o] = null;
+    client.getUserSiteOrigin(o).then((origin) => { userSiteOrigins[o] = origin; });
+  });
   const url = $derived(selectedProvider === 'cloudflare-pages'
     ? (cloudflareRepoValid ? cloudflarePagesBaseURL(repo) : '')
     : !repoValid ? ''
     : isGitLab ? (gitlabUrl === GITLAB_COM ? gitlabPagesBaseURL(owner, repo) : '')
-    : pagesBaseURL(owner, repo));
+    : pagesBaseURL(owner, repo, userSiteOrigins[owner]));
   const canSubmit = $derived(repoValid && title.trim() && (selectedProvider !== 'cloudflare-pages'
     || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
 

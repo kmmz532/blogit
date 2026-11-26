@@ -69,7 +69,7 @@ export const steps: Step[] = [
           state.runUrl = run.html_url;
           if (run.status === 'completed') {
             if (run.conclusion !== 'success') throw new Error(`Deploy ${run.conclusion}: ${run.html_url}`);
-            state.siteUrl = (await gh.getPagesUrl(ref)) ?? pagesBaseURL(config.owner, config.repo);
+            state.siteUrl = (await gh.getPagesUrl(ref))?.replace(/\/?$/, '/') ?? pagesBaseURL(config.owner, config.repo);
             return;
           }
         }
