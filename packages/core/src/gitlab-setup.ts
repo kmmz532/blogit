@@ -1,6 +1,6 @@
 import type { GitLabClient } from './gitlab.ts';
 import { defaultBaseURL, siteFiles } from './scaffold.ts';
-import type { SetupState, StepId, StepStatus } from './setup.ts';
+import { DeployPendingError, type SetupState, type StepId, type StepStatus } from './setup.ts';
 import type { BlogConfig, RepoRef } from './types.ts';
 
 const POLL_MS = 5000;
@@ -66,8 +66,10 @@ export const gitlabSteps: GitLabStep[] = [
         retryUntil = Date.now() + 60_000;
       }
       const deadline = Date.now() + DEPLOY_TIMEOUT_MS;
+      let queued = true;
       while (Date.now() < deadline) {
         const pipeline = await gl.findPipeline(ref, sha);
+        queued = !pipeline || ['created', 'pending', 'waiting_for_resource', 'preparing'].includes(pipeline.status);
         if (pipeline && !['failed', 'canceled'].includes(pipeline.status)) retryUntil = 0;
         if (pipeline && Date.now() >= retryUntil) {
           state.runUrl = pipeline.web_url;
@@ -87,7 +89,7 @@ export const gitlabSteps: GitLabStep[] = [
         }
         await sleep(POLL_MS);
       }
-      throw new Error(`Deploy timed out: ${state.runUrl ?? ''}`);
+      throw new DeployPendingError(state.runUrl ?? '', queued);
     },
   },
 ];

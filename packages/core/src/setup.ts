@@ -25,6 +25,19 @@ export interface Step {
 
 export type StepId = 'create-repo' | 'enable-pages' | 'push-site' | 'wait-deploy';
 
+// 待ち時間内にデプロイが終わらなかった。失敗ではないため、続きから待ち直せる。
+// queued は最後まで実行待ちのまま進まなかったか（混雑や障害の可能性が高い）
+export class DeployPendingError extends Error {
+  readonly runUrl: string;
+  readonly queued: boolean;
+
+  constructor(runUrl: string, queued: boolean) {
+    super(`Deploy is still ${queued ? 'queued' : 'running'}: ${runUrl}`);
+    this.runUrl = runUrl;
+    this.queued = queued;
+  }
+}
+
 const POLL_MS = 5000;
 const DEPLOY_TIMEOUT_MS = 10 * 60 * 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -85,8 +98,10 @@ export const steps: Step[] = [
         rerunUntil = Date.now() + 60_000;
       }
       const deadline = Date.now() + DEPLOY_TIMEOUT_MS;
+      let queued = true;
       while (Date.now() < deadline) {
         const run = await gh.findWorkflowRun(ref, sha);
+        queued = !run || ['queued', 'waiting', 'pending', 'requested'].includes(run.status);
         if (run && run.status !== 'completed') rerunUntil = 0;
         if (run && Date.now() >= rerunUntil) {
           state.runUrl = run.html_url;
@@ -98,7 +113,7 @@ export const steps: Step[] = [
         }
         await sleep(POLL_MS);
       }
-      throw new Error(`Deploy timed out: ${state.runUrl ?? ''}`);
+      throw new DeployPendingError(state.runUrl ?? '', queued);
     },
   },
 ];

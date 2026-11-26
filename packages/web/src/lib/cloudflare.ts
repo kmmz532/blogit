@@ -1,4 +1,4 @@
-import { HUGO_VERSION } from '@blogit/core';
+import { fetchWithRetry, HUGO_VERSION } from '@blogit/core';
 
 const CLIENT_ID = '9a85458daa8ab9012af72788828c7c21';
 const AUTH_URL = 'https://dash.cloudflare.com/oauth2/auth';
@@ -119,7 +119,7 @@ export class CloudflareClient {
     if (!WORKER_URL) throw new Error('Cloudflare API Worker URL is not configured (VITE_AUTH_WORKER_URL)');
     let response: Response;
     try {
-      response = await fetch(`${WORKER_URL}/cloudflare${path}`, {
+      response = await fetchWithRetry(`${WORKER_URL}/cloudflare${path}`, {
         ...init,
         headers: {
           Authorization: `Bearer ${this.token}`,

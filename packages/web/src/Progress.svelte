@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from './lib/i18n.svelte';
   import { clearDraft } from './lib/draft';
-  import { GitHubClient, GitLabClient, isGitLabRepo, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { checkServiceStatus, DeployPendingError, GitHubClient, GitLabClient, isGitLabRepo, type ServiceStatus, type StatusService, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
   import { saveToken } from './lib/auth';
@@ -37,10 +37,22 @@
   let client = $state(gh);
   let glClient = $state(gl);
   let newToken = $state('');
+  // 待ち時間内に終わらなかったとき（失敗ではない）
+  let pending = $state<DeployPendingError | null>(null);
+  // ビルドと公開の手順で失敗したとき
+  let deployFailed = $state(false);
+  // 障害の可能性があるときに確認した、関係するサービスのステータス
+  let serviceStatus = $state<ServiceStatus | null>(null);
+  const serviceNames: Record<StatusService, string> = { github: 'GitHub', gitlab: 'GitLab', cloudflare: 'Cloudflare' };
+  const repoService: StatusService = onGitLab ? 'gitlab' : 'github';
+  const deployService: StatusService = config.provider === 'cloudflare-pages' ? 'cloudflare' : repoService;
 
   async function start() {
     running = true;
     error = '';
+    pending = null;
+    deployFailed = false;
+    serviceStatus = null;
     const report = (id: StepId, s: StepStatus, e?: unknown) => {
       status[id] = s;
       if (e) error = e instanceof Error ? e.message : String(e);
@@ -110,6 +122,7 @@
         }
 
         const deadline = Date.now() + 10 * 60 * 1000;
+        let queued = true;
         while (Date.now() < deadline) {
           deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
           // 同じコミットのデプロイが複数あるときは、直前に作成したものを見る
@@ -119,6 +132,7 @@
           if (deployment) {
             runUrl = deployment.url;
             const stage = deployment.latest_stage;
+            queued = !stage || stage.name === 'queued';
             if (stage?.status === 'success') {
               siteUrl = url;
               setupState.siteUrl = url;
@@ -130,7 +144,7 @@
           }
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
-        if (!siteUrl) throw new Error(`Cloudflare Pages deployment timed out: ${runUrl}`);
+        if (!siteUrl) throw new DeployPendingError(runUrl, queued);
         report('wait-deploy', 'done');
       } else {
         if (!client) throw new Error(t('notLoggedIn', { service: 'GitHub' }));
@@ -148,7 +162,22 @@
       // 作成が完了したら、入力内容の下書きは不要になる
       if (siteUrl) clearDraft();
     } catch (e) {
-      if (!error) error = e instanceof Error ? e.message : String(e);
+      const failedStep = (Object.keys(status) as StepId[]).find((id) => status[id] === 'running' || status[id] === 'error');
+      if (e instanceof DeployPendingError) {
+        // 失敗ではないため、エラーとしては表示しない
+        error = '';
+        pending = e;
+        status['wait-deploy'] = 'pending';
+      } else {
+        if (!error) error = e instanceof Error ? e.message : String(e);
+        if (failedStep) status[failedStep] = 'error';
+        deployFailed = failedStep === 'wait-deploy';
+      }
+      // 実行待ちのまま・ビルドの失敗・サーバーや通信のエラーは障害の可能性があるため、ステータスページを確認する
+      const transient = /: 5\d\d |network|Failed to fetch|NetworkError/i.test(error);
+      if (pending || deployFailed || transient) {
+        serviceStatus = await checkServiceStatus(failedStep === 'wait-deploy' || pending ? deployService : repoService);
+      }
     } finally {
       running = false;
     }
@@ -188,8 +217,26 @@
     {/each}
   </ol>
 
+  {#if pending}
+    <p class="hint">{t(pending.queued ? 'deployQueued' : 'deployPending')}</p>
+    <div class="actions">
+      <button class="button" type="button" onclick={start} disabled={running}>{t('recheck')}</button>
+    </div>
+  {/if}
+
+  {#if serviceStatus}
+    <p class={serviceStatus.degraded ? 'error-text' : 'hint'}>
+      {t(serviceStatus.degraded ? 'statusDegraded' : serviceStatus.degraded === false ? 'statusOk' : 'statusUnknown', { service: serviceNames[serviceStatus.service] })}
+      {#each serviceStatus.incidents.slice(0, 3) as incident}
+        <br /><a href={incident.url} target="_blank" rel="noopener">{incident.name}</a>
+      {/each}
+      <br /><a href={serviceStatus.pageUrl} target="_blank" rel="noopener">{t('statusLink', { service: serviceNames[serviceStatus.service] })}</a>
+    </p>
+  {/if}
+
   {#if error}
     <p class="error-text">{error}</p>
+    {#if deployFailed}<p class="hint">{t('deployFailedHint')}</p>{/if}
     <div class="actions">
       <button class="button" type="button" onclick={start} disabled={running}>{t('retry')}</button>
       <button class="button secondary" type="button" onclick={onBack} disabled={running}>{t('backToForm')}</button>

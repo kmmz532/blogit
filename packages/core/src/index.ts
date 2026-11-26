@@ -4,3 +4,5 @@ export * from './scaffold.ts';
 export * from './setup.ts';
 export * from './gitlab.ts';
 export * from './gitlab-setup.ts';
+export * from './http.ts';
+export * from './status.ts';

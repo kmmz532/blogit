@@ -1,3 +1,4 @@
+import { fetchWithRetry } from './http.ts';
 import type { FileMap, Owner, RepoRef } from './types.ts';
 
 const API = 'https://api.github.com';
@@ -16,7 +17,7 @@ export class GitHubClient {
   constructor(private readonly token: string) {}
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetchWithRetry(`${API}${path}`, {
       method,
       headers: {
         Accept: 'application/vnd.github+json',

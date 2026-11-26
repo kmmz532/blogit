@@ -1,4 +1,5 @@
 import { GITLAB_COM, normalizeGitLabUrl } from './gitlab.ts';
+import { fetchWithRetry } from './http.ts';
 import type { BlogConfig, FileMap } from './types.ts';
 
 export const HUGO_VERSION = '0.141.0';
@@ -151,7 +152,7 @@ export function pseudoVersion(sha: string, date: string): string {
 
 // テーマのリポジトリの既定のブランチの最新コミットから、テーマを固定する版を取得する
 export async function fetchThemeVersion(): Promise<string> {
-  const res = await fetch('https://api.github.com/repos/kmmz532/blogit/commits/main', {
+  const res = await fetchWithRetry('https://api.github.com/repos/kmmz532/blogit/commits/main', {
     headers: { Accept: 'application/vnd.github+json' },
   });
   if (!res.ok) throw new Error(`GET theme version: ${res.status} ${res.statusText}`);

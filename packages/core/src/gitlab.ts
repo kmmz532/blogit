@@ -1,3 +1,4 @@
+import { fetchWithRetry } from './http.ts';
 import type { FileMap, Owner, RepoRef } from './types.ts';
 
 export const GITLAB_COM = 'https://gitlab.com';
@@ -35,7 +36,7 @@ export class GitLabClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}/api/v4${path}`, {
+    const res = await fetchWithRetry(`${this.baseUrl}/api/v4${path}`, {
       method,
       headers: {
         Accept: 'application/json',
@@ -118,7 +119,7 @@ export class GitLabClient {
 
   // ファイルの中身（テキスト）。ファイルかブランチがなければ null
   async getFileText(ref: RepoRef, path: string, branch = 'main'): Promise<string | null> {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `${this.baseUrl}/api/v4/projects/${GitLabClient.project(ref)}/repository/files/${encodeURIComponent(path)}/raw?ref=${encodeURIComponent(branch)}`,
       { headers: { Authorization: `Bearer ${this.token}` } },
     );
