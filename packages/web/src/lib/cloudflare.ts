@@ -73,11 +73,16 @@ export async function completeCloudflareOAuth(): Promise<string | null> {
     redirect_uri: redirectUri,
     code_verifier: verifier,
   });
-  const response = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  });
+  let response: Response;
+  try {
+    response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  } catch (error) {
+    throw new Error(`Cloudflare token exchange network/CORS error: ${error instanceof Error ? error.message : String(error)}`);
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.access_token) {
     throw new Error(data.error_description ?? data.error ?? 'Cloudflare token exchange failed');
@@ -126,7 +131,15 @@ export class CloudflareClient {
   }
 
   async listAccounts(): Promise<CloudflareAccount[]> {
-    const result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
+    let result: { id: string; name: string }[];
+    try {
+      result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error(`Cloudflare account list network/CORS error: ${error.message}`);
+      }
+      throw error;
+    }
     return (result ?? []).map((account: { id: string; name: string }) => ({
       id: account.id,
       name: account.name,
