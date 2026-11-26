@@ -181,16 +181,20 @@
       <button class="button" type="button" onclick={start} disabled={running}>続きから再実行</button>
       <button class="button secondary" type="button" onclick={onBack} disabled={running}>入力に戻る</button>
     </div>
-    <form class="card stack" onsubmit={retryWithToken}>
+    <!-- 権限不足のときだけ使うため、折りたたんでおく -->
+    <details class="card">
+      <summary>トークンを変更して再実行する</summary>
+    <form class="stack" onsubmit={retryWithToken}>
       <div class="field">
-        <label for="new-token">トークンを入れ直して再実行</label>
+        <label for="new-token">新しいトークン</label>
         <input id="new-token" type="password" bind:value={newToken} autocomplete="off" required />
         {#if !onGitLab}<TokenHelp />{/if}
       </div>
       <div class="actions">
-        <button class="button" type="submit" disabled={running || !newToken.trim()}>このトークンで続きから再実行</button>
+        <button class="button" type="submit" disabled={running || !newToken.trim()}>再実行</button>
       </div>
     </form>
+    </details>
   {/if}
 
   {#if siteUrl}

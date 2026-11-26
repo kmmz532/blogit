@@ -50,11 +50,8 @@
   }
 </script>
 
-<h1 class="page-title">Blogitで簡単にHugoブログを構築</h1>
-<p class="lead">
-  GitHubなどのGitサービスと連携し、コストがかからない無料のブログをGitHub Pagesなどに構築します。<br />
-  記事の執筆や設定の変更もWebブラウザから行えます。
-</p>
+<h1 class="page-title">Hugoブログを構築する</h1>
+<p class="lead">GitHubまたはGitLabのアカウントで、無料のHugoブログを作成します。<a href="./about.html">詳しく見る</a></p>
 
 <div class="stack">
   <div class="actions">
@@ -65,6 +62,8 @@
       <i class="fa-brands fa-gitlab" aria-hidden="true"></i> GitLab でログイン
     </button>
   </div>
+
+  <p class="hint">ログインすると、<a href="./terms.html">利用規約</a>と<a href="./privacy.html">プライバシーポリシー</a>に同意したものとみなします。</p>
 
   {#if tokenForm}
     <form class="stack" onsubmit={submit}>

@@ -4,6 +4,8 @@
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
   import { clearGitLab, completeGitLabOAuth, loadGitLab } from './lib/gitlab';
   import { clearCloudflareToken, CloudflareClient, completeCloudflareOAuth, loadCloudflareToken, startCloudflareOAuth, type CloudflareAccount } from './lib/cloudflare';
+  import Footer from './Footer.svelte';
+  import Header from './Header.svelte';
   import Login from './Login.svelte';
   import Progress from './Progress.svelte';
   import SetupForm from './SetupForm.svelte';
@@ -106,32 +108,9 @@
     selectedProvider = 'github-pages';
     try { sessionStorage.removeItem('blogit:deployment-provider'); } catch {}
   }
-
-  function toggleTheme() {
-    const dark = document.documentElement.classList.toggle('dark');
-    try {
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
-    } catch {}
-  }
 </script>
 
-<header class="header">
-  <div class="header-inner">
-    <a class="logo" href="./">Blogit</a>
-    <div class="header-actions">
-      {#if owners[0]}
-        <img class="avatar" src={owners[0].avatarUrl} alt="" />
-        <span>{owners[0].login}</span>
-        <button class="icon-button" type="button" onclick={signOut} aria-label="ログアウト" title="ログアウト">
-          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-        </button>
-      {/if}
-      <button class="icon-button" type="button" onclick={toggleTheme} aria-label="ダークモードを切り替える" title="ダークモードを切り替える">
-        <i class="fa-solid fa-moon" aria-hidden="true"></i>
-      </button>
-    </div>
-  </div>
-</header>
+<Header user={owners[0]} onSignOut={signOut} />
 
 <main class="main">
   {#if loading}
@@ -151,6 +130,4 @@
   {/if}
 </main>
 
-<footer class="footer">
-  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages / Cloudflare Pages / GitLab Pages
-</footer>
+<Footer />

@@ -5,4 +5,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   plugins: [svelte()],
+  // セットアップのアプリと、About・利用規約・プライバシーポリシーの静的ページ
+  build: {
+    rollupOptions: {
+      input: ['index.html', 'about.html', 'terms.html', 'privacy.html'],
+    },
+  },
 });

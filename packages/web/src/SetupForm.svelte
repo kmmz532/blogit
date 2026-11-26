@@ -22,9 +22,9 @@
   } = $props();
 
   const themes: { name: ThemeName; label: string; note: string }[] = [
-    { name: 'default', label: 'Default', note: 'シンプルな白黒。かみみずブログと同じ見た目' },
-    { name: 'warm', label: 'Warm', note: '生成り色と明朝の見出し。罫線で区切る' },
-    { name: 'cool', label: 'Cool', note: '青みの配色と等幅の日付。角のない線で整える' },
+    { name: 'default', label: 'Default', note: '白黒の配色' },
+    { name: 'warm', label: 'Warm', note: '生成り色と明朝体の見出し' },
+    { name: 'cool', label: 'Cool', note: '青系の配色' },
   ];
   const views = [
     { id: 'home-light', label: 'トップ' },
@@ -115,7 +115,6 @@
 </script>
 
 <h1 class="page-title">ブログを作る</h1>
-<p class="lead">{isGitLab ? `GitLab（${gitlabUrl}）にプロジェクトを作成し、選択したサービスに公開します。` : 'GitHub にリポジトリを作成し、選択したサービスに公開します。'}</p>
 
 <form class="stack" onsubmit={submit}>
   <section class="card stack">
@@ -127,20 +126,20 @@
         <label class="choice">
           <input type="radio" name="provider" value="gitlab-pages" checked={selectedProvider === 'gitlab-pages'} onchange={() => onSelectProvider('gitlab-pages')} />
           <span class="choice-name">GitLab Pages</span>
-          <span class="hint">GitLab CI/CD でビルド・公開</span>
+          <span class="hint">GitLab CI/CDで公開</span>
         </label>
         {:else}
         <label class="choice">
           <input type="radio" name="provider" value="github-pages" checked={selectedProvider === 'github-pages'} onchange={() => onSelectProvider('github-pages')} />
           <span class="choice-name">GitHub Pages</span>
-          <span class="hint">GitHub Actions でビルド・公開</span>
+          <span class="hint">GitHub Actionsで公開</span>
         </label>
         {/if}
         {#if cloudflareAvailable}
         <label class="choice">
           <input type="radio" name="provider" value="cloudflare-pages" checked={selectedProvider === 'cloudflare-pages'} onchange={() => onSelectProvider('cloudflare-pages')} />
           <span class="choice-name">Cloudflare Pages</span>
-          <span class="hint">Cloudflare の Git 連携で自動ビルド・公開</span>
+          <span class="hint">CloudflareのGit連携で公開</span>
         </label>
         {/if}
       </div>
@@ -148,7 +147,6 @@
     {#if selectedProvider === 'cloudflare-pages'}
       <div class="stack">
         {#if cloudflareConnected}
-          <p class="hint">Cloudflareと接続済みです。公開先のアカウントを選択してください。</p>
           {#if cloudflareAccounts.length > 0}
             <div class="field">
               <label for="cloudflare-account">Cloudflare アカウント</label>
@@ -162,7 +160,6 @@
             <p class="hint">利用可能なCloudflareアカウントがありません。</p>
           {/if}
         {:else}
-          <p class="hint">Cloudflare Pages を使う場合だけ、Cloudflare アカウントを接続します。</p>
           <div class="actions">
             <button class="button" type="button" onclick={connect} disabled={connecting}>
               {connecting ? '接続中…' : 'Cloudflare と接続'}
@@ -170,18 +167,7 @@
           </div>
         {/if}
         {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
-        <p class="hint">{isGitLab ? '※ GitLab のプロジェクトを Cloudflare Pages に接続するには、Cloudflare のダッシュボード（Workers & Pages → Git 連携）で GitLab アカウントの連携も必要です。' : '※ GitHub リポジトリを Cloudflare Pages に接続するには、Cloudflare 側の GitHub App 認可も必要です。'}</p>
-      </div>
-    {/if}
-    {#if useCustomDomain}
-      <div class="field">
-        <label for="custom-domain">独自ドメイン（任意）</label>
-        <input id="custom-domain" type="text" bind:value={customDomain} placeholder="blog.example.jp" autocomplete="off" spellcheck="false" />
-        {#if !domainValid}
-          <p class="error-text">ドメイン名だけを入力してください（例: blog.example.jp）。</p>
-        {:else if domain}
-          <p class="hint">DNS で {domain} の CNAME レコードを {owner.toLowerCase()}.github.io に向けてください。サブドメインでないドメイン（example.jp など）は A レコードの設定が必要です（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">GitHub のドキュメント</a>）。HTTPS は証明書の発行後に有効になります。</p>
-        {/if}
+        <p class="hint">事前にCloudflareのダッシュボードで{isGitLab ? 'GitLab' : 'GitHub'}との連携を設定してください。</p>
       </div>
     {/if}
   </section>
@@ -203,7 +189,7 @@
   </section>
 
   <section class="card stack">
-    <h2 class="section-title">リポジトリ</h2>
+    <h2 class="section-title">リポジトリと公開 URL</h2>
     <div class="field">
       <label for="repo">作成先</label>
       <div class="repo-input">
@@ -220,9 +206,20 @@
       {:else if selectedProvider === 'cloudflare-pages'}
         <p class="error-text">Cloudflare Pages のプロジェクト名は小文字英数字とハイフンのみ使用できます。</p>
       {:else if repoValid}
-        <p class="hint">公開 URL は初回の公開後に GitLab が決定します。</p>
+        <p class="hint">公開 URL は初回の公開時に決まります。</p>
       {:else}
-        <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
+        <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドのみ使用できます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
+      {/if}
+      {#if useCustomDomain}
+        <div class="field">
+          <label for="custom-domain">独自ドメイン（任意）</label>
+          <input id="custom-domain" type="text" bind:value={customDomain} placeholder="blog.example.jp" autocomplete="off" spellcheck="false" />
+          {#if !domainValid}
+            <p class="error-text">ドメイン名のみを入力してください。</p>
+          {:else if domain}
+            <p class="hint">DNSで <code>{domain}</code> のCNAMEレコードを <code>{owner.toLowerCase()}.github.io</code> に設定してください（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">設定方法</a>）。</p>
+          {/if}
+        </div>
       {/if}
       <label class="checkbox">
         <input type="checkbox" bind:checked={isPrivate} />
@@ -230,8 +227,8 @@
       </label>
       {#if isPrivate}
         <p class="hint">
-          {#if selectedProvider === 'github-pages'}GitHub Pages を非公開リポジトリで使うには、有料プラン（Pro・Team など）が必要です。{/if}
-          公開前の画像のプレビューは、記事のリポジトリが公開のときだけ表示されます。
+          {#if selectedProvider === 'github-pages'}非公開リポジトリでGitHub Pagesを利用するには、有料プランが必要です。{/if}
+          公開前の画像は、管理画面でプレビューできません。
         </p>
       {/if}
     </div>
@@ -245,7 +242,6 @@
         {#each themes as t (t.name)}
           <label class="choice">
             <input type="radio" name="theme" value={t.name} bind:group={theme} />
-            <img class="choice-thumb" src={shot(t.name, 'home-light')} alt="" loading="lazy" />
             <span class="choice-name">{t.label}</span>
             <span class="hint">{t.note}</span>
           </label>

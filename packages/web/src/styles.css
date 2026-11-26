@@ -381,7 +381,26 @@ fieldset {
   color: var(--danger);
 }
 
+/* About・利用規約・プライバシーポリシー */
+.doc {
+  display: grid;
+  gap: 2rem;
+}
+
+.doc h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.doc ul,
+.doc ol {
+  padding-left: 1.5rem;
+}
+
 .footer {
+  display: grid;
+  gap: 0.25rem;
   padding: 2rem 1.25rem;
   text-align: center;
   font-size: 0.85rem;

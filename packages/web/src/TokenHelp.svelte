@@ -4,7 +4,7 @@
 <div class="hint">
   <p>
     <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token</a>
-    の場合は Repository access を <strong>All repositories</strong> にして、次の権限を付けてください。
+    の場合は、Repository access を <strong>All repositories</strong> にして次の権限を付与してください。
   </p>
   <ul class="token-perms">
     <li>Administration: Read and write（リポジトリの作成）</li>
@@ -14,7 +14,7 @@
     <li>Actions: Read（ビルドの確認）</li>
   </ul>
   <p>
-    Classic token の場合は <code>repo</code>・<code>workflow</code>・<code>read:org</code> です。
-    トークンはこのタブを閉じると消えます。
+    Classic token の場合は <code>repo</code>・<code>workflow</code>・<code>read:org</code> を付与してください。
+    トークンはタブを閉じると破棄されます。
   </p>
 </div>
