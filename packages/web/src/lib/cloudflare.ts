@@ -196,6 +196,18 @@ export class CloudflareClient {
     });
   }
 
+  async createDeployment(accountId: string, projectName: string, branch: string, commitSha: string): Promise<CloudflareDeployment> {
+    return this.request(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments`, {
+      method: 'POST',
+      body: JSON.stringify({
+        branch,
+        commit_hash: commitSha,
+        commit_message: 'Initial Blogit deployment',
+        commit_dirty: false,
+      }),
+    });
+  }
+
   async listDeployments(accountId: string, projectName: string): Promise<CloudflareDeployment[]> {
     return this.request(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments?per_page=10`);
   }
