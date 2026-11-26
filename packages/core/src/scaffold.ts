@@ -48,7 +48,8 @@ export function validateThemeModule(path: string): boolean {
     && !path.startsWith(`${THEME_MODULE}/`);
 }
 
-// 外部テーマのとき、ビルド後の HTML に管理ボタン（hugo-gh-admin の浮かせる部品）を差し込むスクリプト
+// ビルド後の HTML に管理ボタン（hugo-gh-admin の浮かせる部品）を差し込むスクリプト。
+// 管理画面からテーマを外部テーマに切り替えても動くように、テーマによらず生成する（Blogit のテーマのページには差し込まれない）
 export const FLOAT_SCRIPT = 'scripts/gh-admin-float.sh';
 
 export function floatScript(): string {
@@ -69,9 +70,9 @@ done
 `;
 }
 
-// Cloudflare Pages のビルドコマンド。外部テーマのときは管理ボタンを差し込む（公開先はドメイン直下）
-export function cloudflareBuildCommand(c: BlogConfig): string {
-  return isExternalTheme(c) ? `hugo --minify --gc && sh ${FLOAT_SCRIPT}` : 'hugo --minify --gc';
+// Cloudflare Pages のビルドコマンド。管理ボタンを差し込む（公開先はドメイン直下）
+export function cloudflareBuildCommand(): string {
+  return `hugo --minify --gc && sh ${FLOAT_SCRIPT}`;
 }
 
 // <owner>.github.io という名前のリポジトリはドメイン直下、それ以外は /<repo>/ に公開される。
@@ -296,8 +297,7 @@ go 1.24.0
 ${require}`;
 }
 
-// external が true なら、ビルド後に管理ボタンを差し込む（外部テーマ）
-export function deployWorkflow(branch = 'main', external = false): string {
+export function deployWorkflow(branch = 'main'): string {
   return `name: deploy
 
 on:
@@ -342,9 +342,9 @@ jobs:
             exit 1
           fi
         env:
-          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache${external ? `
-      # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む
-      - run: sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"` : ''}
+          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache
+      # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む。Blogit のテーマのページには差し込まれない
+      - run: sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -364,7 +364,7 @@ jobs:
 }
 
 // GitLab CI で Hugo をビルドし、GitLab Pages に公開する。hugomods/hugo の exts イメージは Go と Git を含むため Hugo Modules を取得できる
-export function gitlabCi(external = false): string {
+export function gitlabCi(): string {
   return `pages:
   image: hugomods/hugo:exts-${HUGO_VERSION}
   variables:
@@ -376,9 +376,9 @@ export function gitlabCi(external = false): string {
       - .hugo_cache
   # 公開 URL は GitLab が決定する（一意のドメイン・独自ドメイン・セルフホストに対応する）
   script:
-    - hugo --minify --gc --baseURL "\${CI_PAGES_URL}/"${external ? `
-    # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む
-    - sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"` : ''}
+    - hugo --minify --gc --baseURL "\${CI_PAGES_URL}/"
+    # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む。Blogit のテーマのページには差し込まれない
+    - sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"
   artifacts:
     paths:
       - public
@@ -442,8 +442,8 @@ export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBa
   const external = isExternalTheme(c);
   // 既定のサムネイルは Blogit のテーマだけが使う
   if (c.defaultThumbnail && !external) files[`static/default-thumbnail.${c.defaultThumbnail.ext}`] = { base64: c.defaultThumbnail.base64 };
-  if (external) files[FLOAT_SCRIPT] = floatScript();
-  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch, external);
-  if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi(external);
+  files[FLOAT_SCRIPT] = floatScript();
+  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch);
+  if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi();
   return files;
 }

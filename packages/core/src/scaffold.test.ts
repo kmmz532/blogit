@@ -230,12 +230,11 @@ test('siteFiles: an external theme imports the theme and hugo-gh-admin and injec
   assert.ok((files['.github/workflows/deploy.yml'] as string).includes(`sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"`));
   const gitlab = siteFiles({ ...external, provider: 'gitlab-pages' });
   assert.ok((gitlab['.gitlab-ci.yml'] as string).includes(`sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"`));
-  assert.equal(cloudflareBuildCommand({ ...external, provider: 'cloudflare-pages' }), `hugo --minify --gc && sh ${FLOAT_SCRIPT}`);
+  assert.equal(cloudflareBuildCommand(), `hugo --minify --gc && sh ${FLOAT_SCRIPT}`);
 });
 
-test('siteFiles: a Blogit theme does not inject the admin button', () => {
+test('siteFiles: a Blogit theme also gets the injection step so that the theme can be switched later', () => {
   const files = siteFiles(config);
-  assert.ok(!(FLOAT_SCRIPT in files));
-  assert.ok(!(files['.github/workflows/deploy.yml'] as string).includes(FLOAT_SCRIPT));
-  assert.equal(cloudflareBuildCommand({ ...config, provider: 'cloudflare-pages' }), 'hugo --minify --gc');
+  assert.ok(FLOAT_SCRIPT in files);
+  assert.ok((files['.github/workflows/deploy.yml'] as string).includes(`sh ${FLOAT_SCRIPT}`));
 });

@@ -110,7 +110,7 @@
         if (!project) {
           project = await cf.createPagesProject(config.cloudflareAccountId, {
             source: onGitLab ? 'gitlab' : 'github', owner: config.owner, ownerId: details.ownerId, repoId: details.id,
-            repoName: projectName, branch: details.defaultBranch, buildCommand: cloudflareBuildCommand(config),
+            repoName: projectName, branch: details.defaultBranch, buildCommand: cloudflareBuildCommand(),
           });
         }
         const url = project.subdomain ? `https://${project.subdomain}/` : `https://${projectName}.pages.dev/`;
