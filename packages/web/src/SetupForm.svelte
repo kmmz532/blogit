@@ -371,8 +371,8 @@
           </div>
         {/each}
         {#if !linksValid}<p class="error-text">{t('linkUrlInvalid')}</p>{/if}
-        <div class="actions">
-          <button class="button secondary" type="button" onclick={addLink}>
+        <div class="actions link-add">
+          <button class="button secondary small" type="button" onclick={addLink}>
             <i class="fa-solid fa-plus" aria-hidden="true"></i> {t('addLink')}
           </button>
         </div>

@@ -364,6 +364,14 @@ fieldset {
   background: var(--button-secondary-hover);
 }
 
+/* フォームの中の補助的な操作（行の追加など）。入力欄より目立たない大きさにする */
+.button.small {
+  height: 34px;
+  padding: 0 14px;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -523,6 +531,11 @@ fieldset {
 
 .link-row > i {
   text-align: center;
+}
+
+/* 「リンクを追加」は、種類のセレクトボックスの左端に揃える（アイコンの列の幅と間隔の分だけ下げる） */
+.link-add {
+  margin-left: calc(1.25rem + 0.5rem);
 }
 
 /* フッターの表示言語の切り替え。リンクと同じ見た目にする */
