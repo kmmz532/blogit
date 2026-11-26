@@ -15,7 +15,7 @@ export const oauthEnabled = Boolean(clientId && workerUrl);
 // 作成するブログの管理画面で「GitHub でログイン」に使う設定（Blogit の OAuth App・認証用 Worker・中継ページ）
 export function adminLoginSettings(): { clientId: string; tokenUrl: string; relayUrl: string } | null {
   if (!clientId || !workerUrl) return null;
-  return { clientId, tokenUrl: `${workerUrl}/github/token`, relayUrl: new URL('oauth/', location.origin + location.pathname).href };
+  return { clientId, tokenUrl: `${workerUrl}/github/token`, relayUrl: location.origin + location.pathname };
 }
 
 function storage(): Storage | null {
@@ -53,7 +53,8 @@ export function startOAuth(): void {
 export async function completeOAuth(): Promise<string | null> {
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
-  if (!code) return null;
+  // ブログの管理画面への中継中（index.html の先頭の処理）は、Blogit のログインとして扱わない
+  if (!code || (window as { blogitRelaying?: boolean }).blogitRelaying) return null;
   history.replaceState(null, '', location.pathname);
   const expected = storage()?.getItem(STATE_KEY);
   storage()?.removeItem(STATE_KEY);

@@ -25,7 +25,7 @@ Blogit の OAuth 補助 Worker。GitHub OAuth の認可コード交換と、Clou
 ## API
 
 - `POST /token` — GitHub OAuth の認可コードをトークンに交換する（Blogit の Web アプリ用）
-- `POST /github/token` — 同じ交換を、どの origin からも呼べるようにしたもの。ブログの管理画面の「GitHub でログイン」用。コードは Web アプリの中継ページ（`/oauth/`）を経由してブログに渡る
+- `POST /github/token` — 同じ交換を、どの origin からも呼べるようにしたもの。ブログの管理画面の「GitHub でログイン」用。コードは Web アプリのトップページ（OAuth App のコールバック URL）を経由してブログに渡る
 - `GET /cloudflare/accounts` — Cloudflare アカウント一覧
 - `GET /cloudflare/accounts/:accountId/pages/projects/:projectName` — Pages プロジェクト取得
 - `POST /cloudflare/accounts/:accountId/pages/projects` — Pages プロジェクト作成

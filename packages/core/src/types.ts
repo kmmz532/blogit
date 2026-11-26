@@ -40,7 +40,7 @@ export interface AdminLogin {
   clientId: string;
   // OAuth のコードをトークンに交換する URL（Blogit の認証用 Worker の /github/token）
   tokenUrl: string;
-  // OAuth App のコールバック URL にある中継ページ（Blogit の /oauth/）
+  // OAuth App のコールバック URL にある中継ページ（Blogit のトップページ）
   relayUrl: string;
 }
 

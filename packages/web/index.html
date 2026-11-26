@@ -2,6 +2,35 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8">
+    <script>
+      // ブログの管理画面（hugo-gh-admin）の「GitHub でログイン」の中継。OAuth App のコールバック URL はこのページなので、
+      // state が戻り先を含む JSON（{"r": 戻り先, "s": 確認用の値}）のときは、コードをブログのログイン画面へ渡す。
+      // Blogit 自身のログインの state はランダムな ID なので、ここでは何もしない
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var raw = params.get('state');
+        if (!raw || (!params.get('code') && !params.get('error'))) return;
+        var state;
+        try {
+          var text = atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
+          state = JSON.parse(new TextDecoder().decode(Uint8Array.from(text, function (c) { return c.charCodeAt(0); })));
+        } catch (e) { return; }
+        if (!state || typeof state.r !== 'string') return;
+        try {
+          var back = new URL(state.r);
+          var local = back.hostname === 'localhost' || back.hostname === '127.0.0.1';
+          if (back.protocol !== 'https:' && !(back.protocol === 'http:' && local)) return;
+          back.search = '';
+          back.hash = '';
+          ['code', 'error', 'error_description'].forEach(function (key) {
+            if (params.get(key)) back.searchParams.set(key, params.get(key));
+          });
+          back.searchParams.set('state', String(state.s));
+          window.blogitRelaying = true;
+          location.replace(back.href);
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Blogit</title>
     <meta name="description" content="GitHubやGitLabのアカウントで、無料のHugoブログを構築するツール">
