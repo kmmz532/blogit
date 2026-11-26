@@ -242,8 +242,7 @@
   {#if error}
     <p class="error-text">{error}</p>
     {#if deployErrors.length}
-      <pre class="deploy-errors">{deployErrors.join('
-')}</pre>
+      <pre class="deploy-errors">{deployErrors.join('\n')}</pre>
       <p class="hint">{t('deployErrorHint')}</p>
     {:else if deployFailed}<p class="hint">{t('deployFailedHint')}</p>{/if}
     <div class="actions">
