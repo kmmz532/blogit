@@ -100,27 +100,26 @@ export class GitHubClient {
     }
   }
 
-  async getPagesUrl({ owner, repo }: RepoRef): Promise<string | null> {
+  // Pages のサイト情報。Pages が無効・リポジトリがない場合は null
+  private async getPages({ owner, repo }: RepoRef): Promise<PagesSite | null> {
     try {
-      const p = await this.request<{ html_url: string }>('GET', `/repos/${owner}/${repo}/pages`);
-      return p.html_url;
+      return await this.request<PagesSite>('GET', `/repos/${owner}/${repo}/pages`);
     } catch (e) {
       if (e instanceof GitHubError && e.status === 404) return null;
       throw e;
     }
   }
 
+  // 公開 URL（末尾は /）。独自ドメインが設定されていればそのドメインの URL になる
+  async getPagesUrl(ref: RepoRef): Promise<string | null> {
+    const p = await this.getPages(ref);
+    return p ? p.html_url.replace(/\/?$/, '/') : null;
+  }
+
   // <owner>.github.io に設定された独自ドメインのオリジン。未設定・取得できない（権限がない等）場合は null
   async getUserSiteOrigin(owner: string): Promise<string | null> {
-    try {
-      const p = await this.request<{ cname: string | null; https_enforced?: boolean }>(
-        'GET',
-        `/repos/${owner}/${owner}.github.io/pages`,
-      );
-      return p.cname ? `${p.https_enforced === false ? 'http' : 'https'}://${p.cname}` : null;
-    } catch {
-      return null;
-    }
+    const p = await this.getPages({ owner, repo: `${owner}.github.io` }).catch(() => null);
+    return p?.cname ? `${p.https_enforced === false ? 'http' : 'https'}://${p.cname}` : null;
   }
 
   // 指定コミットで起動したワークフローの実行（まだ無ければ null）
@@ -131,6 +130,12 @@ export class GitHubClient {
     );
     return r.workflow_runs[0] ?? null;
   }
+}
+
+interface PagesSite {
+  html_url: string;
+  cname: string | null;
+  https_enforced?: boolean;
 }
 
 export interface WorkflowRun {

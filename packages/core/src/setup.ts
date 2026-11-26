@@ -51,8 +51,7 @@ export const steps: Step[] = [
     async run({ gh, config, ref, state }) {
       const branch = await gh.getDefaultBranch(ref);
       // 独自ドメイン（例: ユーザーの github.io に設定したドメイン）があれば、その URL を baseURL にする
-      const pagesUrl = await gh.getPagesUrl(ref);
-      const baseURL = pagesUrl ? pagesUrl.replace(/\/?$/, '/') : undefined;
+      const baseURL = (await gh.getPagesUrl(ref)) ?? undefined;
       state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config, { baseURL, branch }), 'Set up blog with Blogit');
     },
   },
@@ -69,7 +68,7 @@ export const steps: Step[] = [
           state.runUrl = run.html_url;
           if (run.status === 'completed') {
             if (run.conclusion !== 'success') throw new Error(`Deploy ${run.conclusion}: ${run.html_url}`);
-            state.siteUrl = (await gh.getPagesUrl(ref))?.replace(/\/?$/, '/') ?? pagesBaseURL(config.owner, config.repo);
+            state.siteUrl = (await gh.getPagesUrl(ref)) ?? pagesBaseURL(config.owner, config.repo);
             return;
           }
         }
