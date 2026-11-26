@@ -223,7 +223,7 @@
       {/if}
       <label class="checkbox">
         <input type="checkbox" bind:checked={isPrivate} />
-        {isGitLab ? 'プロジェクト' : 'リポジトリ'}を非公開（Private）で作成する
+        {isGitLab ? 'プロジェクト' : 'リポジトリ'}を非公開で作成する
       </label>
       {#if isPrivate}
         <p class="hint">
