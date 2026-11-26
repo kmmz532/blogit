@@ -4,7 +4,7 @@ const TOKEN_URL = 'https://dash.cloudflare.com/oauth2/token';
 const TOKEN_KEY = 'blogit:cloudflare-token';
 const STATE_KEY = 'blogit:cloudflare-oauth-state';
 const VERIFIER_KEY = 'blogit:cloudflare-code-verifier';
-const WORKER_URL = (import.meta.env.VITE_AUTH_WORKER_URL as string | undefined)?.replace(/\\/+$/, '');
+const WORKER_URL = ((import.meta.env.VITE_AUTH_WORKER_URL as string | undefined) || 'https://blogit-auth.kmmz1127.workers.dev').replace(/\/+$/, '');
 const SCOPES = ['account-settings.read', 'page.write'];
 
 function storage(): Storage | null {
