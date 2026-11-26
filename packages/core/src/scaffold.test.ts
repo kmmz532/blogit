@@ -161,3 +161,12 @@ test('goMod: requires no theme by default and pins the theme and base when a ver
   assert.match(pinned, /github\.com\/kmmz532\/blogit\/themes\/base v0\.0\.0-20261126000807-0123456789ab/);
   assert.match(pinned, /github\.com\/kmmz532\/blogit\/themes\/warm v0\.0\.0-20261126000807-0123456789ab/);
 });
+
+test('hugoToml: writes the admin login settings only for GitHub repositories', () => {
+  const adminLogin = { clientId: 'cid', tokenUrl: 'https://auth.example/github/token', relayUrl: 'https://blogit.example/oauth/' };
+  const toml = hugoToml({ ...config, adminLogin });
+  assert.match(toml, /oauthClientID = "cid"/);
+  assert.match(toml, /oauthRelayURL = "https:\/\/blogit\.example\/oauth\/"/);
+  assert.doesNotMatch(hugoToml(config), /oauthClientID/);
+  assert.doesNotMatch(hugoToml({ ...config, provider: 'gitlab-pages', adminLogin }), /oauthClientID/);
+});

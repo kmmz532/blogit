@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
+  import { adminLoginSettings } from './lib/auth';
   import { loadDraft, saveDraft } from './lib/draft';
   import { i18n, t } from './lib/i18n.svelte';
 
@@ -54,8 +55,10 @@
   let sidebar = $state(pick('sidebar', true));
   let pagerSize = $state(pick('pagerSize', 10));
   let themeAutoUpdate = $state(pick('themeAutoUpdate', true));
+  let useBlogitLogin = $state(pick('useBlogitLogin', true));
+  const adminLogin = adminLoginSettings();
   $effect(() => {
-    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate });
+    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate, useBlogitLogin });
   });
   // 同じ作成先に、途中まで作成したリポジトリがあるとき
   let resumable = $state(false);
@@ -142,6 +145,7 @@
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
         ...(themeAutoUpdate ? {} : { themeVersion: await fetchThemeVersion() }),
+        ...(!isGitLab && adminLogin && useBlogitLogin ? { adminLogin } : {}),
         ...(bio.trim() ? { bio: bio.trim() } : {}),
         ...(linkValues.length ? { links: linkValues } : {}),
         ...(sidebar ? {} : { sidebar: false }),
@@ -337,6 +341,13 @@
             <p class="hint">{t('dnsBefore')}<code>{domain}</code>{t('dnsMiddle')}<code>{owner.toLowerCase()}.github.io</code>{t('dnsAfter')}<a href="https://docs.github.com/{i18n.locale}/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">{t('dnsLink')}</a>{t('dnsClose')}</p>
           {/if}
         </div>
+      {/if}
+      {#if !isGitLab && adminLogin}
+        <label class="checkbox">
+          <input type="checkbox" bind:checked={useBlogitLogin} />
+          {t('useBlogitLogin')}
+        </label>
+        <p class="hint">{t(useBlogitLogin ? 'useBlogitLoginHint' : 'tokenLoginHint')}</p>
       {/if}
       <label class="checkbox">
         <input type="checkbox" bind:checked={themeAutoUpdate} />

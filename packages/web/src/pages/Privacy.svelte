@@ -30,7 +30,7 @@
 
     <section>
       <h2>3. Relay through the authentication server</h2>
-      <p>The authorization code exchange for GitHub login and calls to the Cloudflare API go through a server that the operator runs on Cloudflare Workers. Access tokens and request contents pass through this server, but the server only relays requests and neither stores nor records them.</p>
+      <p>The authorization code exchange for GitHub login (including "Log in with GitHub" in the admin of blogs created with the service) and calls to the Cloudflare API go through a server that the operator runs on Cloudflare Workers. Access tokens and request contents pass through this server, but the server only relays requests and neither stores nor records them.</p>
     </section>
 
     <section>
@@ -83,7 +83,7 @@
 
     <section>
       <h2>3. 認証用サーバーによる中継</h2>
-      <p>GitHubのログインにおける認可コードの交換と、Cloudflare APIの呼び出しは、運営者がCloudflare Workers上で運用するサーバーを経由します。その際、アクセストークンとリクエストの内容がこのサーバーを通過しますが、サーバーはリクエストを中継するのみで、これらを保存も記録もしません。</p>
+      <p>GitHubのログイン（本サービスで作成したブログの管理画面の「GitHubでログイン」を含みます）における認可コードの交換と、Cloudflare APIの呼び出しは、運営者がCloudflare Workers上で運用するサーバーを経由します。その際、アクセストークンとリクエストの内容がこのサーバーを通過しますが、サーバーはリクエストを中継するのみで、これらを保存も記録もしません。</p>
     </section>
 
     <section>

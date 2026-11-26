@@ -104,7 +104,11 @@ ${gitlab ? `  provider = "gitlab"
   branch = ${str(branch)}
   siteRepo = ${str(repo)}
   siteBranch = ${str(branch)}
-  siteConfigPath = "hugo.toml"`;
+  siteConfigPath = "hugo.toml"${c.adminLogin && !gitlab ? `
+  # 「GitHub でログイン」（Blogit の OAuth App と認証用 Worker を利用する）
+  oauthClientID = ${str(c.adminLogin.clientId)}
+  oauthTokenURL = ${str(c.adminLogin.tokenUrl)}
+  oauthRelayURL = ${str(c.adminLogin.relayUrl)}` : ''}`;
   return `title = ${str(c.title)}
 baseURL = ${str(baseURL)}
 languageCode = ${str(c.language)}

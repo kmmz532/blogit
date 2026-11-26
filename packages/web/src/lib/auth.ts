@@ -12,6 +12,12 @@ const SCOPES = ['repo', 'workflow', 'read:org'];
 
 export const oauthEnabled = Boolean(clientId && workerUrl);
 
+// 作成するブログの管理画面で「GitHub でログイン」に使う設定（Blogit の OAuth App・認証用 Worker・中継ページ）
+export function adminLoginSettings(): { clientId: string; tokenUrl: string; relayUrl: string } | null {
+  if (!clientId || !workerUrl) return null;
+  return { clientId, tokenUrl: `${workerUrl}/github/token`, relayUrl: new URL('oauth/', location.origin + location.pathname).href };
+}
+
 function storage(): Storage | null {
   try {
     return sessionStorage;

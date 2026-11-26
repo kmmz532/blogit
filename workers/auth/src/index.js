@@ -16,6 +16,35 @@ function getCorsHeaders(request, env) {
   };
 }
 
+// GitHub の OAuth コードをトークンに交換する。Client Secret を Worker の外に出さないための中継
+async function exchangeGitHubCode(code, env) {
+  const res = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code }),
+  }).catch(() => null);
+  const data = res ? await res.json().catch(() => ({})) : { error: 'github_unreachable' };
+  return data.access_token ? { access_token: data.access_token, scope: data.scope } : { error: data.error ?? 'exchange_failed' };
+}
+
+// hugo-gh-admin の「GitHub でログイン」用。Blogit で作ったブログはドメインが決まっていないため、どの origin からも呼べるようにする。
+// コードは GitHub が中継ページ（OAuth App のコールバック URL）に渡したもので、コード自体がログインの証明になる
+const OPEN_CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
+async function handleAdminToken(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: OPEN_CORS });
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, OPEN_CORS);
+  const { code } = await request.json().catch(() => ({}));
+  if (typeof code !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(code)) return json({ error: 'missing_code' }, 400, OPEN_CORS);
+  const result = await exchangeGitHubCode(code, env);
+  return json(result, result.access_token ? 200 : 400, OPEN_CORS);
+}
+
 function json(body, status = 200, cors = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -117,6 +146,7 @@ async function handleCloudflare(request, cors) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/github/token') return handleAdminToken(request, env);
     const cors = getCorsHeaders(request, env);
     if (!cors) return json({ error: 'origin_not_allowed' }, 403);
 
@@ -135,14 +165,8 @@ export default {
       const { code } = await request.json().catch(() => ({}));
       if (typeof code !== 'string' || !code) return json({ error: 'missing_code' }, 400, cors);
 
-      const res = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.error || !data.access_token) return json({ error: data.error ?? 'exchange_failed' }, 400, cors);
-      return json({ access_token: data.access_token, scope: data.scope }, 200, cors);
+      const result = await exchangeGitHubCode(code, env);
+      return json(result, result.access_token ? 200 : 400, cors);
     }
 
     if (url.pathname.startsWith('/cloudflare/')) {

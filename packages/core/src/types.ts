@@ -28,9 +28,20 @@ export interface BlogConfig {
   // true ならリポジトリを非公開で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;
+  // 管理画面（hugo-gh-admin）の「GitHub でログイン」に使う OAuth の設定。省略時はトークンを入力してログインする（GitHub のリポジトリのみ）
+  adminLogin?: AdminLogin;
   // テーマの版を固定するときの Go modules の版（例: v0.0.0-20261126000000-0123456789ab）。省略時は最新の版を利用し、自動で更新される
   themeVersion?: string;
   language: Language;
+}
+
+export interface AdminLogin {
+  // GitHub OAuth App の Client ID
+  clientId: string;
+  // OAuth のコードをトークンに交換する URL（Blogit の認証用 Worker の /github/token）
+  tokenUrl: string;
+  // OAuth App のコールバック URL にある中継ページ（Blogit の /oauth/）
+  relayUrl: string;
 }
 
 export interface ProfileLink {

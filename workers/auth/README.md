@@ -1,10 +1,10 @@
 # blogit-auth
 
-Blogit の OAuth 補助 Worker。GitHub OAuth の認可コード交換と、Cloudflare API の限定プロキシを担当する。
+Blogit の OAuth 補助 Worker。GitHub OAuth の認可コード交換と、Cloudflare API の限定プロキシを担当する。Blogit で作ったブログの管理画面（hugo-gh-admin）の「GitHub でログイン」にも使う。
 
 - GitHub / Cloudflare のアクセストークンは保存しない・ログに出さない
 - Cloudflare API は許可した Pages 関連エンドポイントだけを中継する（汎用プロキシにはしない）
-- `ALLOWED_ORIGINS` で許可した Web origin 以外は拒否する
+- `ALLOWED_ORIGINS` で許可した Web origin 以外は拒否する（`/github/token` を除く）
 
 ## セットアップ
 
@@ -24,7 +24,8 @@ Blogit の OAuth 補助 Worker。GitHub OAuth の認可コード交換と、Clou
 
 ## API
 
-- `POST /token` — GitHub OAuth の認可コードをトークンに交換する
+- `POST /token` — GitHub OAuth の認可コードをトークンに交換する（Blogit の Web アプリ用）
+- `POST /github/token` — 同じ交換を、どの origin からも呼べるようにしたもの。ブログの管理画面の「GitHub でログイン」用。コードは Web アプリの中継ページ（`/oauth/`）を経由してブログに渡る
 - `GET /cloudflare/accounts` — Cloudflare アカウント一覧
 - `GET /cloudflare/accounts/:accountId/pages/projects/:projectName` — Pages プロジェクト取得
 - `POST /cloudflare/accounts/:accountId/pages/projects` — Pages プロジェクト作成

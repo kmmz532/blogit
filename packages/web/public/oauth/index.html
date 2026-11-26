@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Blogit</title>
+</head>
+<body>
+<p id="message">ログインしています…</p>
+<script>
+  // hugo-gh-admin の「GitHub でログイン」の中継ページ。GitHub の OAuth App のコールバック URL はこのサイトにあるため、
+  // GitHub から受け取ったコードを、state に入っている戻り先（ブログのログイン画面）へ渡す
+  (function () {
+    var params = new URLSearchParams(location.search);
+    var message = document.getElementById('message');
+    try {
+      var raw = (params.get('state') || '').replace(/-/g, '+').replace(/_/g, '/');
+      var state = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(raw), function (c) { return c.charCodeAt(0); })));
+      var back = new URL(state.r);
+      var local = back.hostname === 'localhost' || back.hostname === '127.0.0.1';
+      if (back.protocol !== 'https:' && !(back.protocol === 'http:' && local)) throw new Error('invalid return URL');
+      back.search = '';
+      back.hash = '';
+      ['code', 'error', 'error_description'].forEach(function (key) {
+        if (params.get(key)) back.searchParams.set(key, params.get(key));
+      });
+      back.searchParams.set('state', String(state.s));
+      location.replace(back.href);
+    } catch (e) {
+      message.textContent = 'ログインの戻り先が正しくありません。ブログのログイン画面からやり直してください。';
+    }
+  })();
+</script>
+</body>
+</html>
