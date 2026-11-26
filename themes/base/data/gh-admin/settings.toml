@@ -1,0 +1,104 @@
+# hugo-gh-admin のサイト設定（/admin/settings/）に表示する、Blogit テーマの設定項目
+
+[[fields]]
+  key = "bio"
+  table = "params"
+  type = "textarea"
+  [fields.label]
+    ja = "自己紹介"
+    en = "Self-introduction"
+
+[[fields]]
+  key = "sidebar"
+  table = "params"
+  type = "checkbox"
+  default = true
+  [fields.label]
+    ja = "サイドバーを表示する"
+    en = "Show the sidebar"
+
+[[fields]]
+  key = "links"
+  table = "params"
+  type = "list"
+  [fields.label]
+    ja = "サイドバーのリンク"
+    en = "Sidebar links"
+  [[fields.columns]]
+    key = "icon"
+    type = "select"
+    [fields.columns.label]
+      ja = "アイコン"
+      en = "Icon"
+    [[fields.columns.options]]
+      value = "fa-solid fa-house"
+      [fields.columns.options.label]
+        ja = "Webサイト"
+        en = "Website"
+    [[fields.columns.options]]
+      value = "fa-brands fa-github"
+      [fields.columns.options.label]
+        ja = "GitHub"
+        en = "GitHub"
+    [[fields.columns.options]]
+      value = "fa-brands fa-gitlab"
+      [fields.columns.options.label]
+        ja = "GitLab"
+        en = "GitLab"
+    [[fields.columns.options]]
+      value = "fa-brands fa-x-twitter"
+      [fields.columns.options.label]
+        ja = "X"
+        en = "X"
+    [[fields.columns.options]]
+      value = "fa-brands fa-bluesky"
+      [fields.columns.options.label]
+        ja = "Bluesky"
+        en = "Bluesky"
+    [[fields.columns.options]]
+      value = "fa-brands fa-mastodon"
+      [fields.columns.options.label]
+        ja = "Mastodon"
+        en = "Mastodon"
+    [[fields.columns.options]]
+      value = "fa-brands fa-threads"
+      [fields.columns.options.label]
+        ja = "Threads"
+        en = "Threads"
+    [[fields.columns.options]]
+      value = "fa-brands fa-instagram"
+      [fields.columns.options.label]
+        ja = "Instagram"
+        en = "Instagram"
+    [[fields.columns.options]]
+      value = "fa-brands fa-youtube"
+      [fields.columns.options.label]
+        ja = "YouTube"
+        en = "YouTube"
+    [[fields.columns.options]]
+      value = "fa-brands fa-facebook"
+      [fields.columns.options.label]
+        ja = "Facebook"
+        en = "Facebook"
+    [[fields.columns.options]]
+      value = "fa-solid fa-rss"
+      [fields.columns.options.label]
+        ja = "RSS"
+        en = "RSS"
+    [[fields.columns.options]]
+      value = "fa-solid fa-envelope"
+      [fields.columns.options.label]
+        ja = "メール"
+        en = "Email"
+  [[fields.columns]]
+    key = "name"
+    type = "text"
+    [fields.columns.label]
+      ja = "表示名"
+      en = "Name"
+  [[fields.columns]]
+    key = "url"
+    type = "url"
+    [fields.columns.label]
+      ja = "URL"
+      en = "URL"
