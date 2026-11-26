@@ -114,7 +114,16 @@
 
 <main class="main">
   {#if loading}
-    <p class="lead">読み込み中…</p>
+    <!-- 読み込み中はセットアップ画面の形をしたスケルトンを表示する -->
+    <div class="stack" aria-busy="true" aria-label="読み込み中">
+      <div class="skeleton skeleton-title"></div>
+      {#each [3, 2, 2] as lines}
+        <div class="card stack">
+          <div class="skeleton skeleton-label"></div>
+          {#each { length: lines } as _}<div class="skeleton skeleton-field"></div>{/each}
+        </div>
+      {/each}
+    </div>
   {:else if gl}
     {#if !config}
       <SetupForm platform="gitlab" client={gl} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} gitlabUrl={gl.baseUrl} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />

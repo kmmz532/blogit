@@ -208,7 +208,7 @@
       {:else if repoValid}
         <p class="hint">公開URLは初回の公開時に決まります。</p>
       {:else}
-        <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドのみ使用できます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
+        <p class="error-text">英数字、ハイフン、アンダースコア、ピリオドのみ使用できます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
       {/if}
       {#if useCustomDomain}
         <div class="field">

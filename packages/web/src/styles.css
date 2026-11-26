@@ -421,3 +421,36 @@ fieldset {
   gap: 0.5rem;
   cursor: pointer;
 }
+
+/* 読み込み中のスケルトン */
+.skeleton {
+  border-radius: 6px;
+  background: var(--border);
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 40%;
+  height: 40px;
+}
+
+.skeleton-label {
+  width: 25%;
+  height: 0.9rem;
+}
+
+.skeleton-field {
+  height: 2.6rem;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

@@ -27,7 +27,7 @@
 
   <section>
     <h2>3. 認証用サーバーによる中継</h2>
-    <p>GitHubのログインにおける認可コードの交換と、Cloudflare APIの呼び出しは、運営者がCloudflare Workers上で運用するサーバーを経由します。その際、アクセストークンとリクエストの内容がこのサーバーを通過しますが、サーバーはリクエストを中継するのみで、これらを保存・記録しません。</p>
+    <p>GitHubのログインにおける認可コードの交換と、Cloudflare APIの呼び出しは、運営者がCloudflare Workers上で運用するサーバーを経由します。その際、アクセストークンとリクエストの内容がこのサーバーを通過しますが、サーバーはリクエストを中継するのみで、これらを保存も記録もしません。</p>
   </section>
 
   <section>
@@ -51,7 +51,7 @@
   </section>
 
   <section>
-    <h2>運営者・お問い合わせ</h2>
+    <h2>運営者とお問い合わせ</h2>
     <p>上中野 瑞人（<a href="https://kmmz.jp" target="_blank" rel="noopener">kmmz.jp</a>）<br /><a href="mailto:contact@kmmz.jp">contact@kmmz.jp</a></p>
   </section>
 </Page>
