@@ -5,7 +5,8 @@
       <a class="icon-button" href="{{ with site.GetPage "/search" }}{{ .RelPermalink }}{{ else }}{{ "search/" | relURL }}{{ end }}" aria-label="{{ T "search" }}" title="{{ T "search" }}">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
       </a>
-      {{- if and (eq .Kind "page") (eq .Section "posts") }}
+      {{- /* 記事と固定ページ（content/<slug>.md）に編集ボタンを出す。layout・type を持つページ（検索・管理画面など）は除く */}}
+      {{- if and (eq .Kind "page") (or (eq .Section "posts") (and (eq .Section "") (not .Params.layout) (not .Params.type))) }}
       {{ partial "gh-admin/button.html" (dict "kind" "edit" "page" . "class" "icon-button") }}
       {{- end }}
       {{ partial "gh-admin/button.html" (dict "kind" "new" "page" . "class" "icon-button") }}

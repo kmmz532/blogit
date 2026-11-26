@@ -23,6 +23,9 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 - GitHubのリポジトリでは、管理画面に「GitHubでログイン」を設定する（BlogitのOAuth Appと `workers/auth` を共用する）。高度な設定でオフにすると、管理画面にはトークンを入力してログインする。
 - テーマ（`themes/base`）は、Blogitで作成したブログ以外のHugoサイトからも取り込める。見た目は、サイト側の `layouts/` と `assets/` で上書きする（[themes/base/README.md](themes/base/README.md)）。
 - 構築の途中で失敗した場合や、ビルドが時間内に完了しなかった場合は、完了していない手順から再実行できる。障害の可能性があるときは、GitHub・GitLab・Cloudflareのステータスページへのリンクを表示する。
+- 管理画面から固定ページ（`content/<slug>.md`、URLは `/<slug>/`）を作成・編集できる。「メニューに表示する」を選んだページは、サイドバーの「ページ」欄に並び順で表示する。
+- 記事と固定ページは、編集画面の「検索エンジンに表示しない」で `noindex` を指定し、sitemapから除外できる。
+- 投稿日時が未来の記事は、ビルドの対象から除外される。投稿日時を過ぎても自動では公開されず、次のビルド（記事の保存や、管理画面の「更新」からの再ビルド）で公開される。
 - 公開後のビルドが一時的な障害で失敗した場合は、GitHub Actions、GitLabのパイプライン、Cloudflare Pagesのいずれかの画面から再実行する。
 
 ## 構成

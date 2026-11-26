@@ -1,4 +1,12 @@
 {{ define "main" }}
+{{- if ne .Section "posts" }}
+{{- /* 固定ページ（content/<slug>.md）。日付・タグ・前後の記事は出さない */}}
+<article class="post page">
+  <h1 class="post-title">{{ .Title }}</h1>
+  {{ partial "toc.html" (dict "page" . "variant" "mobile") }}
+  <div class="post-body">{{ .Content }}</div>
+</article>
+{{- else }}
 <article class="post" data-slug="{{ .File.ContentBaseName }}">
   <h1 class="post-title">{{ .Title }}</h1>
   <div class="post-meta">
@@ -34,6 +42,7 @@
     {{- end }}
   </nav>
 </article>
+{{- end }}
 {{ end }}
 
 {{ define "scripts" }}

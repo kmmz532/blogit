@@ -15,6 +15,18 @@
     </div>
   </section>
 
+  {{- /* 固定ページのうち、メニュー（menu: main）に登録したもの。並び順は weight */}}
+  {{- with site.Menus.main }}
+  <section class="sidebar-card">
+    <h2 class="sidebar-title">{{ T "pages" }}</h2>
+    <ul class="sidebar-list">
+      {{- range . }}
+      <li><a href="{{ .URL }}" {{ if $.IsMenuCurrent "main" . }}class="current" aria-current="page"{{ end }}>{{ .Name }}</a></li>
+      {{- end }}
+    </ul>
+  </section>
+  {{- end }}
+
   <section class="sidebar-card">
     <h2 class="sidebar-title">{{ T "search" }}</h2>
     {{- /* 検索欄はサイトごとに見た目を変えやすいよう、部品に分けている */}}
