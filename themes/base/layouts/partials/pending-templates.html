@@ -1,16 +1,15 @@
-{{- /* 反映待ちの表示の雛形。gh-admin（または gl-admin）の pending.js が複製して値を入れる。
+{{- /* 反映待ちの表示の雛形。gh-admin/pending.js が複製して値を入れる。
   値は data-field の要素に textContent・src・href で入れ、data-item の雛形は項目の数だけ複製する。
   クラス名は post-card.html と single.html のものと同じにする（見た目を揃えるため）。
-  文言は 管理画面モジュールの辞書から取る。 */ -}}
-{{- $adminNS := partial "admin-ns.html" . -}}
-{{- $i18n := partial (printf "%s/i18n.html" $adminNS) . | transform.Unmarshal -}}
+  文言は gh-admin の辞書（言語は params.ghAdmin.lang）から取る。 */ -}}
+{{- $i18n := partial "gh-admin/i18n.html" . | transform.Unmarshal -}}
 {{- /* 通常記事と同じHugoのurlize・relURLでカテゴリURLを生成し、反映待ちJSへ渡す */ -}}
 {{- $categoryURLs := dict -}}
 {{- range site.Taxonomies.categories -}}
   {{- $categoryURLs = merge $categoryURLs (dict .Page.Title .Page.RelPermalink) -}}
 {{- end -}}
-<script type="application/json" id="{{ $adminNS }}-category-urls">{{ $categoryURLs | jsonify | safeJS }}</script>
-<template id="{{ $adminNS }}-pending-card">
+<script type="application/json" id="gh-admin-category-urls">{{ $categoryURLs | jsonify | safeJS }}</script>
+<template id="gh-admin-pending-card">
   <article class="carditem">
     <img class="card-thumb" data-field="thumb" width="96" height="96" alt="" loading="lazy">
     <div class="card-body">
@@ -33,7 +32,7 @@
     </a>
   </article>
 </template>
-<template id="{{ $adminNS }}-pending-article">
+<template id="gh-admin-pending-article">
   <div>
     <p class="pending-band"><i class="fa-solid fa-clock" aria-hidden="true"></i> <span data-field="band">{{ $i18n.pending.band }}</span> <a class="pending-edit" data-field="edit" aria-label="{{ $i18n.common.edit_post }}" title="{{ $i18n.common.edit_post }}"><i class="fa-solid fa-pen" aria-hidden="true"></i> {{ $i18n.editor.view_edit }}</a></p>
     <nav class="breadcrumb" aria-label="{{ $i18n.common.breadcrumb }}">

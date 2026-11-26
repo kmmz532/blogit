@@ -30,5 +30,5 @@
   </div>
   {{- end }}
   </div>
-  {{ partial (printf "%s/button.html" (partial "admin-ns.html" .)) (dict "kind" "edit" "page" . "class" "card-edit" "label" (T "edit")) }}
+  {{ partial "gh-admin/button.html" (dict "kind" "edit" "page" . "class" "card-edit" "label" (T "edit")) }}
 </article>

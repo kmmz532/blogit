@@ -33,33 +33,6 @@ export function validateGitLabProjectPath(name: string): boolean {
 
 const gitlabUrl = (c: BlogConfig) => normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM;
 const isGitLabCom = (c: BlogConfig) => gitlabUrl(c) === GITLAB_COM;
-const GL_ADMIN_MODULE = 'github.com/kmmz532/hugo-gl-admin';
-
-// GitLab のサイトでは管理画面のページを hugo-gl-admin のレイアウトに向ける（テーマの同名ページを上書きする）
-function gitlabAdminPages(c: BlogConfig): FileMap {
-  const ja = c.language === 'ja';
-  const pages: [string, string, string][] = [
-    ['admin', '/admin/', ja ? '一括管理' : 'Admin'],
-    ['admin-images', '/admin/images/', ja ? '画像の管理' : 'Images'],
-    ['admin-settings', '/admin/settings/', ja ? '設定' : 'Settings'],
-    ['edit', '/edit/', ja ? '記事の編集' : 'Edit'],
-    ['login', '/login/', ja ? 'ログイン' : 'Login'],
-  ];
-  return Object.fromEntries(pages.map(([layout, url, title]) => [`content/${layout}.md`, `---
-title: ${str(title)}
-type: "gl-admin"
-layout: ${layout}
-url: ${url}
-sidebar: false
-hide:
-  rightbar: true
-robots: noindex
-sitemap:
-  disable: true
----
-`]));
-}
-
 // 選択された公開先の URL。セルフホストの GitLab は Pages のドメインが不明なため / にする（ビルド時に CI_PAGES_URL で上書きする）
 export function defaultBaseURL(c: BlogConfig): string {
   if (c.provider === 'cloudflare-pages') return cloudflarePagesBaseURL(c.repo);
@@ -74,23 +47,12 @@ const str = (s: string) => JSON.stringify(s);
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c)): string {
   const repo = `${c.owner}/${c.repo}`;
   const gitlab = c.provider === 'gitlab-pages';
-  // 管理画面は GitHub なら hugo-gh-admin（テーマが取り込む）、GitLab なら hugo-gl-admin（このサイトで取り込む）
-  const admin = gitlab
-    ? `# 管理画面（hugo-gl-admin）。記事もサイト設定もこのプロジェクトに保存する
-[params.blogit]
-  admin = "gitlab"
-
-[params.glAdmin]
-  lang = ${str(c.language)}
-  gitlabURL = ${str(gitlabUrl(c))}
-  repo = ${str(repo)}
-  branch = "main"
-  siteRepo = ${str(repo)}
-  siteBranch = "main"
-  siteConfigPath = "hugo.toml"`
-    : `# 管理画面（hugo-gh-admin）。記事もサイト設定もこのリポジトリに保存する
+  // 管理画面は hugo-gh-admin（テーマが取り込む）。GitLab のサイトでは provider = "gitlab" にする
+  const admin = `# 管理画面（hugo-gh-admin）。記事もサイト設定もこの${gitlab ? 'プロジェクト' : 'リポジトリ'}に保存する
 [params.ghAdmin]
-  lang = ${str(c.language)}
+${gitlab ? `  provider = "gitlab"
+  gitlabURL = ${str(gitlabUrl(c))}
+` : ''}  lang = ${str(c.language)}
   repo = ${str(repo)}
   branch = "main"
   siteRepo = ${str(repo)}
@@ -130,10 +92,7 @@ enableRobotsTXT = true
 
 ${admin}
 
-${gitlab ? `[[module.imports]]
-  path = ${str(GL_ADMIN_MODULE)}
-
-` : ''}# テーマ（Blogit）。default / warm / cool から選べる
+# テーマ（Blogit）。default / warm / cool から選べる
 [[module.imports]]
   path = ${str(`${THEME_MODULE}/${c.theme}`)}
 `;
@@ -275,6 +234,6 @@ export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBa
     [post.path]: post.content,
   };
   if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
-  if (c.provider === 'gitlab-pages') Object.assign(files, gitlabAdminPages(c), { '.gitlab-ci.yml': gitlabCi() });
+  if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi();
   return files;
 }

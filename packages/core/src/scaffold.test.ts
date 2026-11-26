@@ -57,14 +57,12 @@ test('siteFiles: GitLab Pages uses .gitlab-ci.yml and CI_PAGES_URL', () => {
   assert.match(files['.gitlab-ci.yml'], /^pages:$/m);
   assert.match(files['.gitlab-ci.yml'], /--baseURL "\$\{CI_PAGES_URL\}\/"/);
   assert.match(files['hugo.toml'], /^baseURL = "https:\/\/example-group\.gitlab\.io\/sub\/my-blog\/"$/m);
-  assert.match(files['hugo.toml'], /^\[params\.glAdmin\]$/m);
+  assert.match(files['hugo.toml'], /^\[params\.ghAdmin\]$/m);
+  assert.match(files['hugo.toml'], /^  provider = "gitlab"$/m);
   assert.match(files['hugo.toml'], /^  gitlabURL = "https:\/\/gitlab\.com"$/m);
   assert.match(files['hugo.toml'], /^  repo = "Example-Group\/sub\/my-blog"$/m);
-  assert.match(files['hugo.toml'], /^  admin = "gitlab"$/m);
-  assert.match(files['hugo.toml'], /path = "github\.com\/kmmz532\/hugo-gl-admin"/);
-  assert.doesNotMatch(files['hugo.toml'], /ghAdmin/);
-  assert.match(files['content/admin.md'], /^type: "gl-admin"$/m);
-  assert.match(files['content/login.md'], /^url: \/login\/$/m);
+  assert.doesNotMatch(files['hugo.toml'], /hugo-gl-admin|glAdmin|params\.blogit/);
+  assert.ok(!('content/admin.md' in files));
   assert.match(files['go.mod'], /^module gitlab\.com\/Example-Group\/sub\/my-blog$/m);
 });
 

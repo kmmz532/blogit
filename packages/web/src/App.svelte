@@ -151,5 +151,5 @@
 </main>
 
 <footer class="footer">
-  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin / hugo-gl-admin + GitHub Pages / Cloudflare Pages / GitLab Pages
+  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages / Cloudflare Pages / GitLab Pages
 </footer>
