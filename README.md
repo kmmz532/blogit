@@ -1,4 +1,75 @@
 # Blogit
-GitHubだけでブログを構築するビルドツール
+GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWebツール
 
-- blogit.kmmz.jp/
+- https://blogit.kmmz.jp/
+
+## できること
+
+- GitHubまたはGitLabにログインし、ブログ用のリポジトリを作成する。
+- Hugoのサイト一式（設定・テーマ・最初の記事・ビルド設定）をコミットし、初回の公開まで自動で行う。
+- 公開後は、ブラウザの管理画面（[hugo-gh-admin](https://github.com/kmmz532/hugo-gh-admin)）から記事の執筆やサイト設定の変更を行う。
+
+| リポジトリ | 公開先 | ビルド |
+|---|---|---|
+| GitHub | GitHub Pages | GitHub Actions |
+| GitHub | Cloudflare Pages | CloudflareのGit連携 |
+| GitLab（gitlab.com・セルフホスト） | GitLab Pages | GitLab CI/CD |
+| GitLab（gitlab.comのみ） | Cloudflare Pages | CloudflareのGit連携 |
+
+- リポジトリは公開・非公開のどちらでも作成できる。GitHub Pagesを非公開リポジトリで利用するには、GitHubの有料プランが必要。
+- Cloudflare Pagesを利用する場合は、CloudflareのダッシュボードでGitHubまたはGitLabとの連携を済ませておく。
+- テーマは `default`・`warm`・`cool` から選択する。
+
+## 構成
+
+| パス | 内容 |
+|---|---|
+| `packages/core` | 生成するファイルとセットアップ手順（GitHub・GitLabのAPIクライアントを含む） |
+| `packages/web` | ウィザードのWebアプリ（Svelte + Vite） |
+| `themes/` | Hugoのテーマ（`base` と、それを取り込む `default`・`warm`・`cool`） |
+| `workers/auth` | GitHub OAuthのコード交換とCloudflare APIの中継を行うWorker（[README](workers/auth/README.md)） |
+| `examples/site` | 生成されるサイトの例 |
+
+## 開発
+
+```sh
+npm install
+npm run dev     # ウィザードを起動する
+npm test        # core のテスト
+npm run check   # 型チェック
+npm run build   # Web アプリのビルド
+```
+
+ログインに使用する値は `packages/web/.env` に記述する（[.env.example](packages/web/.env.example)）。未設定のサービスは、アクセストークンを入力してログインする。
+
+| 変数 | 内容 |
+|---|---|
+| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth AppのClient ID |
+| `VITE_AUTH_WORKER_URL` | `workers/auth` のWorkerのURL |
+| `VITE_GITLAB_CLIENT_ID` | gitlab.comのOAuthアプリケーションのApplication ID |
+
+## OAuthの設定
+
+### GitHub
+
+[workers/auth/README.md](workers/auth/README.md) の手順でOAuth AppとWorkerを用意する。スコープは `repo`・`workflow`・`read:org` を要求する。
+
+### GitLab
+
+gitlab.comのUser settings → Applicationsで、次の設定のアプリケーションを作成する。PKCEでトークンを交換するため、Client SecretとWorkerは不要。
+
+- Redirect URI: WebアプリのURL（例: `https://blogit.kmmz.jp/`）
+- 非公開（Confidential）: 無効
+- Scopes: `api`
+
+セルフホストのGitLabは、ログイン画面でインスタンスのURLと `api` スコープのPersonal Access Tokenを入力する。
+
+## 公開
+
+`main` へのpushで、GitHub Actions（`.github/workflows/web.yml`）がWebアプリをビルドし、GitHub Pagesに公開する。ビルドに渡す値は、リポジトリのSettings → Secrets and variables → Actions → Variablesに登録する。
+
+| Variable | 渡す先 |
+|---|---|
+| `OAUTH_CLIENT_ID` | `VITE_GITHUB_CLIENT_ID` |
+| `AUTH_WORKER_URL` | `VITE_AUTH_WORKER_URL` |
+| `GITLAB_CLIENT_ID` | `VITE_GITLAB_CLIENT_ID` |
