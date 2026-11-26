@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
+  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
   import { loadDraft, saveDraft } from './lib/draft';
   import { i18n, t } from './lib/i18n.svelte';
@@ -9,7 +9,7 @@
   }: {
     platform: 'github' | 'gitlab';
     // GitHubClient と GitLabClient の共通部分だけを使う
-    client: { repoExists(ref: RepoRef): Promise<boolean>; getUserSiteOrigin?(owner: string): Promise<string | null>; isBlogitSite?(ref: RepoRef): Promise<boolean> };
+    client: { repoExists(ref: RepoRef): Promise<boolean>; getUserSiteOrigin?(owner: string): Promise<string | null>; isBlogitSite?(ref: RepoRef): Promise<boolean>; isEmptyRepo?(ref: RepoRef): Promise<boolean> };
     gitlabUrl?: string;
     owners: Owner[];
     cloudflareAccounts: CloudflareAccount[];
@@ -53,8 +53,9 @@
     : []);
   let sidebar = $state(pick('sidebar', true));
   let pagerSize = $state(pick('pagerSize', 10));
+  let themeAutoUpdate = $state(pick('themeAutoUpdate', true));
   $effect(() => {
-    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize });
+    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate });
   });
   // 同じ作成先に、途中まで作成したリポジトリがあるとき
   let resumable = $state(false);
@@ -122,8 +123,9 @@
         return;
       }
       if (!resumable && await client.repoExists({ owner, repo })) {
-        // Blogit が途中まで作成したリポジトリなら、続きから構築できる
-        if (client.isBlogitSite && await client.isBlogitSite({ owner, repo })) {
+        // Blogit が途中まで作成したリポジトリ（ファイルの追加前に止まった空のリポジトリを含む）なら、続きから構築できる
+        if ((client.isBlogitSite && await client.isBlogitSite({ owner, repo }))
+          || (client.isEmptyRepo && await client.isEmptyRepo({ owner, repo }))) {
           resumable = true;
           return;
         }
@@ -139,6 +141,7 @@
         ...(isGitLab ? { gitlabUrl } : {}),
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
+        ...(themeAutoUpdate ? {} : { themeVersion: await fetchThemeVersion() }),
         ...(bio.trim() ? { bio: bio.trim() } : {}),
         ...(linkValues.length ? { links: linkValues } : {}),
         ...(sidebar ? {} : { sidebar: false }),
@@ -332,6 +335,11 @@
           {/if}
         </div>
       {/if}
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={themeAutoUpdate} />
+        {t('themeAutoUpdate')}
+      </label>
+      <p class="hint">{t(themeAutoUpdate ? 'themeAutoUpdateHint' : 'themePinnedHint')}</p>
       <label class="checkbox">
         <input type="checkbox" bind:checked={isPrivate} />
         {t(isGitLab ? 'createPrivateProject' : 'createPrivateRepo')}

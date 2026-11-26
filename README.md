@@ -18,7 +18,7 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 
 - リポジトリは公開・非公開のどちらでも作成できる。GitHub Pagesを非公開リポジトリで利用するには、GitHubの有料プランが必要。
 - Cloudflare Pagesを利用する場合は、CloudflareのダッシュボードでGitHubまたはGitLabとの連携を済ませておく。
-- テーマは `default`・`warm`・`cool` から選択する。
+- テーマは `default`・`warm`・`cool` から選択する。既定ではビルドのたびに最新のテーマを利用し、高度な設定で作成時の版に固定することもできる。
 
 ## 構成
 
