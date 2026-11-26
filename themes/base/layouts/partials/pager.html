@@ -8,18 +8,28 @@
   <span class="disabled edge"><i class="fa-solid fa-angles-left" aria-hidden="true"></i></span>
   <span class="disabled"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></span>
   {{- end }}
-  {{- /* 番号は最初・最後・現在の前後 1 ページだけ出し、間は「…」で省略する */}}
+  {{- /* 番号は最初・最後・現在の前後 2 ページだけ出し、間は「…」で省略する。
+    狭い画面では前後 2 ページ目（class="wide"）を隠し、その位置に「…」（class="narrow"）を出す。
+    隣がすでに「…」なら、狭い画面用の「…」は出さない */}}
   {{- $cur := .PageNumber }}
   {{- $last := .TotalPages }}
   {{- $gap := false }}
   {{- range .Pagers }}
   {{- $n := .PageNumber }}
-  {{- if or (eq $n 1) (eq $n $last) (and (ge $n (sub $cur 1)) (le $n (add $cur 1))) }}
+  {{- $d := cond (gt $n $cur) (sub $n $cur) (sub $cur $n) }}
+  {{- if or (eq $n 1) (eq $n $last) (le $d 2) }}
   {{- $gap = false }}
+  {{- $wide := and (eq $d 2) (ne $n 1) (ne $n $last) }}
+  {{- if and $wide (lt $n $cur) (eq $n 2) }}
+  <span class="ellipsis narrow" aria-hidden="true">…</span>
+  {{- end }}
   {{- if eq $n $cur }}
   <span class="current" aria-current="page">{{ $n }}</span>
   {{- else }}
-  <a href="{{ .URL }}">{{ $n }}</a>
+  <a href="{{ .URL }}"{{ if $wide }} class="wide"{{ end }}>{{ $n }}</a>
+  {{- end }}
+  {{- if and $wide (gt $n $cur) (eq $n (sub $last 1)) }}
+  <span class="ellipsis narrow" aria-hidden="true">…</span>
   {{- end }}
   {{- else if not $gap }}
   {{- $gap = true }}

@@ -180,6 +180,11 @@ a.chip:hover {
   border-color: transparent;
 }
 
+/* 狭い画面だけで出す「…」 */
+.pager .ellipsis.narrow {
+  display: none;
+}
+
 /* 狭い画面では、番号と役割が重なる「最初」「最後」のボタンを省き、1 行に収まるようにボタンと間隔を小さくする。
    最も多いとき（前・1・…・前後と現在の 3 つ・…・最後・次）でも 320 px 幅に収まる */
 @media (max-width: 480px) {
@@ -198,8 +203,13 @@ a.chip:hover {
     width: 1rem;
   }
 
-  .pager .edge {
+  .pager .edge,
+  .pager .wide {
     display: none;
+  }
+
+  .pager .ellipsis.narrow {
+    display: inline-flex;
   }
 }
 
