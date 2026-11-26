@@ -338,3 +338,19 @@
 .home-search {
   margin-bottom: 1.25rem;
 }
+
+/* キーボード操作でフォーカスしたときだけ表示する */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--foreground);
+  color: var(--background);
+  border-radius: 4px;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}

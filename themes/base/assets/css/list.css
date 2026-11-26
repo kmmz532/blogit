@@ -175,6 +175,18 @@ a.chip:hover {
   color: var(--background);
 }
 
+.pager .ellipsis {
+  width: auto;
+  border-color: transparent;
+}
+
+/* 狭い画面では、番号と役割が重なる「最初」「最後」のボタンを省く */
+@media (max-width: 480px) {
+  .pager .edge {
+    display: none;
+  }
+}
+
 .pager .disabled {
   opacity: 0.4;
 }

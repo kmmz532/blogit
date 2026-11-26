@@ -1,13 +1,15 @@
 {{- /* 先頭の XML 宣言は、HTML として読まれてエスケープされないように safeHTML で出す */ -}}
 {{ `<?xml version="1.0" encoding="utf-8" standalone="yes"?>` | safeHTML }}
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-{{- $items := first 30 (where site.RegularPages "Section" "posts") -}}
+{{- /* トップは全記事、タグ・カテゴリ・セクションはそのページに属する記事だけ */ -}}
+{{- $pages := cond .IsHome site.RegularPages .RegularPages -}}
+{{- $items := first 30 (where $pages "Section" "posts") -}}
   <channel>
-    <title>{{ site.Title | transform.XMLEscape }}</title>
-    <link>{{ site.BaseURL }}</link>
+    <title>{{ if .IsHome }}{{ site.Title | transform.XMLEscape }}{{ else }}{{ printf "%s | %s" .Title site.Title | transform.XMLEscape }}{{ end }}</title>
+    <link>{{ .Permalink }}</link>
     <description>{{ site.Params.description | transform.XMLEscape }}</description>
     <language>{{ site.Language.LanguageCode }}</language>
-    <atom:link href="{{ "index.xml" | absURL }}" rel="self" type="application/rss+xml" />
+    <atom:link href="{{ with .OutputFormats.Get "RSS" }}{{ .Permalink }}{{ end }}" rel="self" type="application/rss+xml" />
     {{- range $items }}
     {{- $url := or .Params.external .Permalink }}
     <item>
