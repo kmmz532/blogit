@@ -15,6 +15,8 @@ export interface BlogConfig {
   cloudflareAccountId?: string;
   // provider が gitlab-pages のときの GitLab インスタンスの URL（例: https://gitlab.com）。owner はネームスペースのフルパス
   gitlabUrl?: string;
+  // provider が github-pages のときの独自ドメイン（例: blog.example.jp）。省略時は GitHub Pages の既定の URL
+  customDomain?: string;
   // true ならリポジトリを非公開（Private）で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;

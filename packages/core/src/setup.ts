@@ -1,5 +1,5 @@
 import type { GitHubClient } from './github.ts';
-import { pagesBaseURL, siteFiles } from './scaffold.ts';
+import { defaultBaseURL, siteFiles } from './scaffold.ts';
 import type { BlogConfig, RepoRef } from './types.ts';
 
 // セットアップの途中経過。中断しても、この値から続きを実行できる
@@ -42,8 +42,16 @@ export const steps: Step[] = [
   },
   {
     id: 'enable-pages',
-    done: async ({ gh, ref }) => (await gh.getPagesUrl(ref)) !== null,
-    run: ({ gh, ref }) => gh.enablePages(ref),
+    // 独自ドメインを指定した場合は、そのドメインが設定済みであることまで確認する
+    async done({ gh, config, ref }) {
+      const url = await gh.getPagesUrl(ref);
+      if (url === null) return false;
+      return !config.customDomain || new URL(url).host === config.customDomain.toLowerCase();
+    },
+    async run({ gh, config, ref }) {
+      await gh.enablePages(ref);
+      if (config.customDomain) await gh.setPagesDomain(ref, config.customDomain.toLowerCase());
+    },
   },
   {
     id: 'push-site',
@@ -51,7 +59,8 @@ export const steps: Step[] = [
     async run({ gh, config, ref, state }) {
       const branch = await gh.getDefaultBranch(ref);
       // 独自ドメイン（例: ユーザーの github.io に設定したドメイン）があれば、その URL を baseURL にする
-      const baseURL = (await gh.getPagesUrl(ref)) ?? undefined;
+      // 独自ドメイン指定時は https にする（証明書の発行前は API が http の URL を返すため）
+      const baseURL = config.customDomain ? undefined : (await gh.getPagesUrl(ref)) ?? undefined;
       state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config, { baseURL, branch }), 'Set up blog with Blogit');
     },
   },
@@ -68,7 +77,7 @@ export const steps: Step[] = [
           state.runUrl = run.html_url;
           if (run.status === 'completed') {
             if (run.conclusion !== 'success') throw new Error(`Deploy ${run.conclusion}: ${run.html_url}`);
-            state.siteUrl = (await gh.getPagesUrl(ref)) ?? pagesBaseURL(config.owner, config.repo);
+            state.siteUrl = config.customDomain ? defaultBaseURL(config) : (await gh.getPagesUrl(ref)) ?? defaultBaseURL(config);
             return;
           }
         }

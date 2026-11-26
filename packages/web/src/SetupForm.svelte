@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateGitLabProjectPath, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
+  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
 
   let {
@@ -41,6 +41,7 @@
   let theme = $state<ThemeName>('default');
   let language = $state<'ja' | 'en'>('ja');
   let isPrivate = $state(false);
+  let customDomain = $state('');
   let busy = $state(false);
   let connecting = $state(false);
   let error = $state('');
@@ -58,12 +59,16 @@
     userSiteOrigins[o] = null;
     client.getUserSiteOrigin(o).then((origin) => { userSiteOrigins[o] = origin; });
   });
-  const url = $derived(selectedProvider === 'cloudflare-pages'
+  const useCustomDomain = $derived(!isGitLab && selectedProvider === 'github-pages');
+  const domain = $derived(customDomain.trim().toLowerCase());
+  const domainValid = $derived(!domain || validateCustomDomain(domain));
+  const url = $derived(useCustomDomain && domain && domainValid ? `https://${domain}/`
+    : selectedProvider === 'cloudflare-pages'
     ? (cloudflareRepoValid ? cloudflarePagesBaseURL(repo) : '')
     : !repoValid ? ''
     : isGitLab ? (gitlabUrl === GITLAB_COM ? gitlabPagesBaseURL(owner, repo) : '')
     : pagesBaseURL(owner, repo, userSiteOrigins[owner]));
-  const canSubmit = $derived(repoValid && title.trim() && (selectedProvider !== 'cloudflare-pages'
+  const canSubmit = $derived(repoValid && title.trim() && (!useCustomDomain || domainValid) && (selectedProvider !== 'cloudflare-pages'
     || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
 
   async function connect() {
@@ -98,6 +103,7 @@
         owner, ownerType, repo, provider: selectedProvider,
         ...(selectedProvider === 'cloudflare-pages' ? { cloudflareAccountId: selectedCloudflareAccountId } : {}),
         ...(isGitLab ? { gitlabUrl } : {}),
+        ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
       });
     } catch (err) {
@@ -142,7 +148,7 @@
     {#if selectedProvider === 'cloudflare-pages'}
       <div class="stack">
         {#if cloudflareConnected}
-          <p class="hint">Cloudflare 接続済み。公開先アカウントを選択してね。</p>
+          <p class="hint">Cloudflareと接続済みです。公開先のアカウントを選択してください。</p>
           {#if cloudflareAccounts.length > 0}
             <div class="field">
               <label for="cloudflare-account">Cloudflare アカウント</label>
@@ -165,6 +171,17 @@
         {/if}
         {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
         <p class="hint">{isGitLab ? '※ GitLab のプロジェクトを Cloudflare Pages に接続するには、Cloudflare のダッシュボード（Workers & Pages → Git 連携）で GitLab アカウントの連携も必要です。' : '※ GitHub リポジトリを Cloudflare Pages に接続するには、Cloudflare 側の GitHub App 認可も必要です。'}</p>
+      </div>
+    {/if}
+    {#if useCustomDomain}
+      <div class="field">
+        <label for="custom-domain">独自ドメイン（任意）</label>
+        <input id="custom-domain" type="text" bind:value={customDomain} placeholder="blog.example.jp" autocomplete="off" spellcheck="false" />
+        {#if !domainValid}
+          <p class="error-text">ドメイン名だけを入力してください（例: blog.example.jp）。</p>
+        {:else if domain}
+          <p class="hint">DNS で {domain} の CNAME レコードを {owner.toLowerCase()}.github.io に向けてください。サブドメインでないドメイン（example.jp など）は A レコードの設定が必要です（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">GitHub のドキュメント</a>）。HTTPS は証明書の発行後に有効になります。</p>
+        {/if}
       </div>
     {/if}
   </section>

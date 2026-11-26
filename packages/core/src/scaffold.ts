@@ -26,6 +26,12 @@ export function gitlabPagesBaseURL(owner: string, repo: string): string {
   return `https://${host}/${[...subgroups, repo].join('/')}/`;
 }
 
+// 独自ドメインとして受け付ける形か（ホスト名のみ。スキーム・パス・ポートは不可）
+export function validateCustomDomain(domain: string): boolean {
+  return domain.length <= 253
+    && /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/i.test(domain);
+}
+
 // GitLab のプロジェクトのパスとして受け付ける形か
 export function validateGitLabProjectPath(name: string): boolean {
   return /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9_])?$/.test(name)
@@ -41,7 +47,7 @@ export const isGitLabRepo = (c: BlogConfig) => c.provider === 'gitlab-pages' || 
 export function defaultBaseURL(c: BlogConfig): string {
   if (c.provider === 'cloudflare-pages') return cloudflarePagesBaseURL(c.repo);
   if (c.provider === 'gitlab-pages') return isGitLabCom(c) ? gitlabPagesBaseURL(c.owner, c.repo) : '/';
-  return pagesBaseURL(c.owner, c.repo);
+  return c.customDomain ? `https://${c.customDomain.toLowerCase()}/` : pagesBaseURL(c.owner, c.repo);
 }
 
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る

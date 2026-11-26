@@ -100,6 +100,11 @@ export class GitHubClient {
     }
   }
 
+  // Pages に独自ドメインを設定する。DNS の設定と HTTPS の証明書の発行は GitHub 側で非同期に進む
+  async setPagesDomain({ owner, repo }: RepoRef, cname: string): Promise<void> {
+    await this.request('PUT', `/repos/${owner}/${repo}/pages`, { cname });
+  }
+
   // Pages のサイト情報。Pages が無効・リポジトリがない場合は null
   private async getPages({ owner, repo }: RepoRef): Promise<PagesSite | null> {
     try {

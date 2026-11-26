@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeGitLabUrl } from './gitlab.ts';
-import { gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateGitLabProjectPath } from './scaffold.ts';
+import { gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
@@ -103,4 +103,18 @@ test('validateGitLabProjectPath', () => {
   assert.ok(!validateGitLabProjectPath('-blog'));
   assert.ok(!validateGitLabProjectPath('blog.git'));
   assert.ok(!validateGitLabProjectPath('my blog'));
+});
+
+test('validateCustomDomain', () => {
+  assert.ok(validateCustomDomain('blog.example.jp'));
+  assert.ok(validateCustomDomain('example.jp'));
+  assert.ok(!validateCustomDomain('example'));
+  assert.ok(!validateCustomDomain('https://blog.example.jp'));
+  assert.ok(!validateCustomDomain('blog.example.jp/path'));
+  assert.ok(!validateCustomDomain('-blog.example.jp'));
+});
+
+test('siteFiles: GitHub Pages with a custom domain uses it as baseURL', () => {
+  const files = siteFiles({ ...config, customDomain: 'Blog.Example.jp' });
+  assert.match(files['hugo.toml'], /^baseURL = "https:\/\/blog\.example\.jp\/"$/m);
 });
