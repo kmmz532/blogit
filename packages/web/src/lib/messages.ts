@@ -60,7 +60,8 @@ export const ja = {
   themeExternalNote: 'Hugoのテーマ（Hugo Modules）',
   themeModule: 'テーマのリポジトリのURLまたはモジュールのパス',
   themeModuleResolved: '{path} として取り込む。',
-  themeModuleHint: 'Hugo Modulesで取り込めるテーマのリポジトリのURLまたはパスを入力する（例: https://github.com/owner/hugo-theme）。themes.gohugo.ioのテーマのページのURLも利用でき、入力中は同サイトに掲載されたテーマを候補に表示する。テーマが必要とする設定は、作成後にhugo.tomlへ追加する。管理画面へのボタンは、画面の左下に表示する。',
+  // {modules}・{gallery} はリンクに置き換える（SetupForm.svelte）
+  themeModuleHint: '{modules}で取り込めるテーマのリポジトリのURLまたはパスを入力する（例: https://github.com/owner/hugo-theme）。{gallery}のテーマのページのURLも利用でき、入力中は同サイトに掲載されたテーマを候補に表示する。テーマが必要とする設定は、作成後にhugo.tomlへ追加する。管理画面へのボタンは、画面の左下に表示する。',
   themeModuleInvalid: 'リポジトリのURLまたはモジュールのパスの形式が正しくありません（例: https://github.com/owner/hugo-theme）。',
   externalNoPreview: 'その他のテーマはプレビューを表示できません。',
   preview: 'プレビュー',
@@ -214,7 +215,7 @@ export const en: Record<MessageKey, string> = {
   themeExternalNote: 'A Hugo theme (Hugo Modules)',
   themeModule: 'Theme repository URL or module path',
   themeModuleResolved: 'It will be imported as {path}.',
-  themeModuleHint: 'Enter the repository URL or path of a theme that can be imported with Hugo Modules (e.g. https://github.com/owner/hugo-theme). The URL of a theme page on themes.gohugo.io also works, and themes listed there are suggested while you type. Add the settings the theme needs to hugo.toml after creation. A button to the admin screens appears at the bottom left.',
+  themeModuleHint: 'Enter the repository URL or path of a theme that can be imported with {modules} (e.g. https://github.com/owner/hugo-theme). The URL of a theme page on {gallery} also works, and themes listed there are suggested while you type. Add the settings the theme needs to hugo.toml after creation. A button to the admin screens appears at the bottom left.',
   themeModuleInvalid: 'The repository URL or module path is not valid (e.g. https://github.com/owner/hugo-theme).',
   externalNoPreview: 'No preview is available for other themes.',
   preview: 'Preview',

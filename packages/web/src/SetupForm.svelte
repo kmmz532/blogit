@@ -320,7 +320,8 @@
         </datalist>
         {#if themeModule.trim() && !themeModuleValid}<p class="error-text">{t('themeModuleInvalid')}</p>
         {:else if themeModulePath && themeModulePath !== themeModule.trim()}<p class="hint">{t('themeModuleResolved', { path: themeModulePath })}</p>{/if}
-        <p class="hint">{t('themeModuleHint')}</p>
+        <!-- 改行を入れると日本語の文中に空白が入るので、1 行で書く -->
+        <p class="hint">{#each t('themeModuleHint').split(/(\{modules\}|\{gallery\})/) as part}{#if part === '{modules}'}<a href="https://gohugo.io/hugo-modules/use-modules/" target="_blank" rel="noopener">Hugo Modules</a>{:else if part === '{gallery}'}<a href="https://themes.gohugo.io/" target="_blank" rel="noopener">themes.gohugo.io</a>{:else}{part}{/if}{/each}</p>
       </div>
       <p class="hint">{t('externalNoPreview')}</p>
       {:else}
