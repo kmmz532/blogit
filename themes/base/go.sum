@@ -8,5 +8,7 @@ github.com/kmmz532/hugo-gh-admin v0.11.1 h1:SulySS4RLLZR4Hz0HyTUuXE3Kkl85vyNzX1g
 github.com/kmmz532/hugo-gh-admin v0.11.1/go.mod h1:bHdWT6DtOrulew3k1Mm0HkANLGu9vO37hRhItAu36gI=
 github.com/kmmz532/hugo-gh-admin v0.12.0 h1:FPaxgNLVnHcIO/7gROwtcNEW5M1unN2OVwNTrx6qcsY=
 github.com/kmmz532/hugo-gh-admin v0.12.0/go.mod h1:bHdWT6DtOrulew3k1Mm0HkANLGu9vO37hRhItAu36gI=
+github.com/kmmz532/hugo-gh-admin v0.13.0 h1:gvXaHgMk3vJbUlyMIDBwsDdWpUg5b4ZsfjWjSgqYoY4=
+github.com/kmmz532/hugo-gh-admin v0.13.0/go.mod h1:bHdWT6DtOrulew3k1Mm0HkANLGu9vO37hRhItAu36gI=
 github.com/kmmz532/hugo-shortcodes v0.2.1 h1:RdXB1++5X3dwd5qMl4lWtEWObzb1Lp6GFnBaJ1Ut2eM=
 github.com/kmmz532/hugo-shortcodes v0.2.1/go.mod h1:urBZ6YmX/4ycAZ+nDhh1x9iLvawdL3vq9RVz18+ydlM=

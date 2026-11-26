@@ -91,6 +91,13 @@ export function validateLinkUrl(url: string): boolean {
 }
 
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL。branch は記事を保存するブランチ（リポジトリの既定のブランチ）
+// 再ビルドに使うワークフロー。Cloudflare Pages は Git 連携でビルドするため、管理画面からは起動しない
+function buildWorkflow(c: BlogConfig): string | null {
+  if (c.provider === 'github-pages') return 'deploy.yml';
+  if (c.provider === 'gitlab-pages') return '.gitlab-ci.yml';
+  return null;
+}
+
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c), branch = 'main'): string {
   const repo = `${c.owner}/${c.repo}`;
   const gitlab = isGitLabRepo(c);
@@ -104,7 +111,9 @@ ${gitlab ? `  provider = "gitlab"
   branch = ${str(branch)}
   siteRepo = ${str(repo)}
   siteBranch = ${str(branch)}
-  siteConfigPath = "hugo.toml"${c.adminLogin && !gitlab ? `
+  siteConfigPath = "hugo.toml"${buildWorkflow(c) ? `
+  # サイト設定の「バージョン」タブの「最新の版で再ビルド」で実行するビルド
+  buildWorkflow = ${str(buildWorkflow(c)!)}` : ''}${c.adminLogin && !gitlab ? `
   # 「GitHub でログイン」（Blogit の OAuth App と認証用 Worker を利用する）
   oauthClientID = ${str(c.adminLogin.clientId)}
   oauthTokenURL = ${str(c.adminLogin.tokenUrl)}

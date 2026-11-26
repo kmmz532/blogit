@@ -181,3 +181,9 @@ test('siteFiles: adds the uploaded favicon and default thumbnail as binary files
   assert.match(toml, /defaultThumbnail = "\/default-thumbnail\.jpg"/);
   assert.doesNotMatch(siteFiles(config)['hugo.toml'] as string, /icon =/);
 });
+
+test('hugoToml: writes the rebuild workflow for GitHub Pages and GitLab Pages only', () => {
+  assert.match(hugoToml(config), /buildWorkflow = "deploy\.yml"/);
+  assert.match(hugoToml({ ...config, provider: 'gitlab-pages' }), /buildWorkflow = "\.gitlab-ci\.yml"/);
+  assert.doesNotMatch(hugoToml({ ...config, provider: 'cloudflare-pages' }), /buildWorkflow/);
+});
