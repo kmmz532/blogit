@@ -334,7 +334,13 @@ jobs:
       # 公開 URL は GitHub が決定する（独自ドメインや、<owner>.github.io に設定した独自ドメイン配下の /<repo>/ に対応する）
       - id: pages
         uses: actions/configure-pages@v5
-      - run: hugo --minify --gc --baseURL "\${{ steps.pages.outputs.base_url }}/"
+      # 失敗したときは Hugo の Error 行を注釈にする（Blogit の作成画面が API から読み、エラーとして表示する）
+      - shell: bash
+        run: |
+          if ! hugo --minify --gc --baseURL "\${{ steps.pages.outputs.base_url }}/" 2>&1 | tee "\$RUNNER_TEMP/hugo.log"; then
+            grep '^Error' "\$RUNNER_TEMP/hugo.log" | sed 's/^/::error::/'
+            exit 1
+          fi
         env:
           HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache${external ? `
       # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む

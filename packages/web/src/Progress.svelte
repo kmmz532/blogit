@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from './lib/i18n.svelte';
   import { clearDraft } from './lib/draft';
-  import { checkServiceStatus, DeployPendingError, GitHubClient, GitLabClient, isGitLabRepo, type ServiceStatus, type StatusService, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, cloudflareBuildCommand, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { checkServiceStatus, DeployFailedError, DeployPendingError, GitHubClient, GitLabClient, isGitLabRepo, type ServiceStatus, type StatusService, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, cloudflareBuildCommand, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
   import { saveToken } from './lib/auth';
@@ -41,6 +41,8 @@
   let pending = $state<DeployPendingError | null>(null);
   // ビルドと公開の手順で失敗したとき
   let deployFailed = $state(false);
+  // ビルドが出力したエラー（GitHub Actions の注釈から取得する）
+  let deployErrors = $state<string[]>([]);
   // 障害の可能性があるときに確認した、関係するサービスのステータス
   let serviceStatus = $state<ServiceStatus | null>(null);
   const serviceNames: Record<StatusService, string> = { github: 'GitHub', gitlab: 'GitLab', cloudflare: 'Cloudflare' };
@@ -52,6 +54,7 @@
     error = '';
     pending = null;
     deployFailed = false;
+    deployErrors = [];
     serviceStatus = null;
     const report = (id: StepId, s: StepStatus, e?: unknown) => {
       status[id] = s;
@@ -172,10 +175,12 @@
         if (!error) error = e instanceof Error ? e.message : String(e);
         if (failedStep) status[failedStep] = 'error';
         deployFailed = failedStep === 'wait-deploy';
+        if (e instanceof DeployFailedError) deployErrors = e.details;
       }
       // 実行待ちのまま・ビルドの失敗・サーバーや通信のエラーは障害の可能性があるため、ステータスページを確認する
       const transient = /: 5\d\d |network|Failed to fetch|NetworkError/i.test(error);
-      if (pending || deployFailed || transient) {
+      // ビルドのエラーが分かっているときは障害ではないため、確認しない
+      if (pending || (deployFailed && !deployErrors.length) || transient) {
         serviceStatus = await checkServiceStatus(failedStep === 'wait-deploy' || pending ? deployService : repoService);
       }
     } finally {
@@ -236,7 +241,11 @@
 
   {#if error}
     <p class="error-text">{error}</p>
-    {#if deployFailed}<p class="hint">{t('deployFailedHint')}</p>{/if}
+    {#if deployErrors.length}
+      <pre class="deploy-errors">{deployErrors.join('
+')}</pre>
+      <p class="hint">{t('deployErrorHint')}</p>
+    {:else if deployFailed}<p class="hint">{t('deployFailedHint')}</p>{/if}
     <div class="actions">
       <button class="button" type="button" onclick={start} disabled={running}>{t('retry')}</button>
       <button class="button secondary" type="button" onclick={onBack} disabled={running}>{t('backToForm')}</button>
@@ -266,3 +275,16 @@
     <p class="hint">{t('changeLaterBefore')}<a href="{siteUrl}admin/settings/" target="_blank" rel="noopener">{t('changeLaterLink')}</a>{t('changeLaterAfter')}</p>
   {/if}
 </div>
+
+<style>
+  .deploy-errors {
+    margin: 0;
+    padding: 0.75rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+</style>

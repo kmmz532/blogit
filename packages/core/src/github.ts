@@ -182,6 +182,25 @@ export class GitHubClient {
     );
     return r.workflow_runs[0] ?? null;
   }
+
+  // ワークフローの実行に含まれるジョブ
+  async listWorkflowJobs({ owner, repo }: RepoRef, runId: number): Promise<WorkflowJob[]> {
+    const r = await this.request<{ jobs: WorkflowJob[] }>('GET', `/repos/${owner}/${repo}/actions/runs/${runId}/jobs?per_page=100`);
+    return r.jobs;
+  }
+
+  // ジョブのエラーの注釈（ワークフローが ::error:: で出力したもの）。終了コードだけを伝える注釈は除く
+  async getJobErrors({ owner, repo }: RepoRef, jobId: number): Promise<string[]> {
+    const r = await this.request<{ annotation_level: string; message: string }[]>('GET', `/repos/${owner}/${repo}/check-runs/${jobId}/annotations?per_page=50`);
+    return r.filter((a) => a.annotation_level === 'failure' && !/^Process completed with exit code/.test(a.message)).map((a) => a.message);
+  }
+}
+
+export interface WorkflowJob {
+  id: number;
+  name: string;
+  status: string;
+  conclusion: string | null;
 }
 
 interface PagesSite {

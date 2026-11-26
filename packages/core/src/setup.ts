@@ -1,4 +1,4 @@
-import type { GitHubClient } from './github.ts';
+import type { GitHubClient, WorkflowJob } from './github.ts';
 import { defaultBaseURL, siteFiles } from './scaffold.ts';
 import type { BlogConfig, RepoRef } from './types.ts';
 
@@ -36,6 +36,31 @@ export class DeployPendingError extends Error {
     this.runUrl = runUrl;
     this.queued = queued;
   }
+}
+
+// ビルドと公開のワークフローが失敗した。details はビルドが出力したエラー（取得できなければ空）
+export class DeployFailedError extends Error {
+  readonly runUrl: string;
+  readonly details: string[];
+
+  constructor(conclusion: string, runUrl: string, details: string[]) {
+    super(`Deploy ${conclusion}: ${runUrl}`);
+    this.runUrl = runUrl;
+    this.details = details;
+  }
+}
+
+// 失敗したジョブのエラーの注釈を集める。取得できなくても失敗は伝えるため、例外は投げない
+async function jobErrors(gh: GitHubClient, ref: RepoRef, jobs: WorkflowJob[]): Promise<string[]> {
+  const out: string[] = [];
+  for (const job of jobs.filter((j) => j.conclusion === 'failure')) {
+    try {
+      out.push(...(await gh.getJobErrors(ref, job.id)));
+    } catch {
+      // 注釈が読めなくても、実行の URL は伝えられる
+    }
+  }
+  return out;
 }
 
 const POLL_MS = 5000;
@@ -105,8 +130,11 @@ export const steps: Step[] = [
         if (run && run.status !== 'completed') rerunUntil = 0;
         if (run && Date.now() >= rerunUntil) {
           state.runUrl = run.html_url;
+          // 実行全体の完了を待たず、失敗したジョブがあればその時点で止める
+          const jobs = await gh.listWorkflowJobs(ref, run.id).catch(() => [] as WorkflowJob[]);
+          const failed = run.status === 'completed' ? run.conclusion !== 'success' : jobs.some((j) => j.conclusion === 'failure');
+          if (failed) throw new DeployFailedError(run.conclusion ?? 'failure', run.html_url, await jobErrors(gh, ref, jobs));
           if (run.status === 'completed') {
-            if (run.conclusion !== 'success') throw new Error(`Deploy ${run.conclusion}: ${run.html_url}`);
             state.siteUrl = config.customDomain ? defaultBaseURL(config) : (await gh.getPagesUrl(ref)) ?? defaultBaseURL(config);
             return;
           }
