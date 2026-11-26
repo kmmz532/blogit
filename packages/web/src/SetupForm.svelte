@@ -122,8 +122,8 @@
         return;
       }
       if (!resumable && await client.repoExists({ owner, repo })) {
-        // Blogit が途中まで作成したリポジトリなら、続きから構築できる（GitHub Pages のみ）
-        if (selectedProvider === 'github-pages' && client.isBlogitSite && await client.isBlogitSite({ owner, repo })) {
+        // Blogit が途中まで作成したリポジトリなら、続きから構築できる
+        if (client.isBlogitSite && await client.isBlogitSite({ owner, repo })) {
           resumable = true;
           return;
         }

@@ -81,8 +81,13 @@
         report('enable-pages', 'done');
 
         report('push-site', 'running');
-        const commitSha = await repoClient.commitFiles(ref, details.defaultBranch, siteFiles(config, { branch: details.defaultBranch }), 'Set up blog with Blogit');
-        setupState.commitSha = commitSha;
+        // サイトのファイルが追加済みなら（再試行・読み直し後の再開も）、既定のブランチの最新コミットを使う
+        if (setupState.commitSha === undefined) {
+          setupState.commitSha = await repoClient.isBlogitSite(ref)
+            ? await repoClient.getBranchHeadSha(ref, details.defaultBranch)
+            : await repoClient.commitFiles(ref, details.defaultBranch, siteFiles(config, { branch: details.defaultBranch }), 'Set up blog with Blogit');
+        }
+        const commitSha = setupState.commitSha;
         report('push-site', 'done');
 
         report('wait-deploy', 'running');
@@ -98,7 +103,8 @@
         // 最新コミットのデプロイがまだなければ Pages API から明示的に初回ビルドを開始する。
         let deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
         let deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha);
-        if (!deployment) {
+        // 前回のデプロイが失敗・中止していれば、新しくデプロイし直す
+        if (!deployment || ['failure', 'canceled'].includes(deployment.latest_stage?.status ?? '')) {
           deployment = await cf.createDeployment(config.cloudflareAccountId, projectName, details.defaultBranch, commitSha);
           runUrl = deployment.url;
         }
@@ -106,7 +112,10 @@
         const deadline = Date.now() + 10 * 60 * 1000;
         while (Date.now() < deadline) {
           deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
-          deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha) ?? deployment;
+          // 同じコミットのデプロイが複数あるときは、直前に作成したものを見る
+          deployment = deployments.find((item) => item.id === deployment?.id)
+            ?? deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha)
+            ?? deployment;
           if (deployment) {
             runUrl = deployment.url;
             const stage = deployment.latest_stage;

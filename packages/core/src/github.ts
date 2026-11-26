@@ -150,6 +150,11 @@ export class GitHubClient {
     return p?.cname ? `${p.https_enforced === false ? 'http' : 'https'}://${p.cname}` : null;
   }
 
+  // 失敗したワークフローの実行を再実行する
+  async rerunWorkflowRun({ owner, repo }: RepoRef, runId: number): Promise<void> {
+    await this.request('POST', `/repos/${owner}/${repo}/actions/runs/${runId}/rerun`);
+  }
+
   // 指定コミットで起動したワークフローの実行（まだ無ければ null）
   async findWorkflowRun({ owner, repo }: RepoRef, sha: string): Promise<WorkflowRun | null> {
     const r = await this.request<{ workflow_runs: WorkflowRun[] }>(

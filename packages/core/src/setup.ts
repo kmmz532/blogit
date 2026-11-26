@@ -76,10 +76,19 @@ export const steps: Step[] = [
     async run({ gh, config, ref, state }) {
       const sha = state.commitSha;
       if (!sha) throw new Error('push-site has not run');
+      // 再試行時に前回の実行が失敗していれば、再実行してから待つ
+      const previous = await gh.findWorkflowRun(ref, sha);
+      // 再実行の直後は前回の結果が返ることがあるため、実行中になるまで（最長 1 分）完了扱いにしない
+      let rerunUntil = 0;
+      if (previous?.status === 'completed' && previous.conclusion !== 'success') {
+        await gh.rerunWorkflowRun(ref, previous.id);
+        rerunUntil = Date.now() + 60_000;
+      }
       const deadline = Date.now() + DEPLOY_TIMEOUT_MS;
       while (Date.now() < deadline) {
         const run = await gh.findWorkflowRun(ref, sha);
-        if (run) {
+        if (run && run.status !== 'completed') rerunUntil = 0;
+        if (run && Date.now() >= rerunUntil) {
           state.runUrl = run.html_url;
           if (run.status === 'completed') {
             if (run.conclusion !== 'success') throw new Error(`Deploy ${run.conclusion}: ${run.html_url}`);

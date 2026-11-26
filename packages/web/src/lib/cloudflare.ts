@@ -1,3 +1,5 @@
+import { HUGO_VERSION } from '@blogit/core';
+
 const CLIENT_ID = '9a85458daa8ab9012af72788828c7c21';
 const AUTH_URL = 'https://dash.cloudflare.com/oauth2/auth';
 const TOKEN_URL = 'https://dash.cloudflare.com/oauth2/token';
@@ -60,10 +62,11 @@ export async function completeCloudflareOAuth(): Promise<string | null> {
   const expectedState = storage()?.getItem(STATE_KEY);
   if (!code || !expectedState || params.get('state') !== expectedState) return null;
 
+  // 失敗しても ?code= を残さない（残ると GitHub の戻りとして扱われ、state の不一致でログアウトする）
+  history.replaceState(null, '', location.pathname);
   const verifier = storage()?.getItem(VERIFIER_KEY);
   if (!verifier) throw new Error('Cloudflare OAuth code verifier is missing');
   const redirectUri = location.origin + location.pathname;
-  history.replaceState(null, '', location.pathname);
   clearCloudflareToken();
 
   const body = new URLSearchParams({
@@ -171,11 +174,11 @@ export class CloudflareClient {
         },
         deployment_configs: {
           preview: { env_vars: {
-            HUGO_VERSION: { type: 'plain_text', value: '0.141.0' },
+            HUGO_VERSION: { type: 'plain_text', value: HUGO_VERSION },
             GO_VERSION: { type: 'plain_text', value: '1.24.0' },
           } },
           production: { env_vars: {
-            HUGO_VERSION: { type: 'plain_text', value: '0.141.0' },
+            HUGO_VERSION: { type: 'plain_text', value: HUGO_VERSION },
             GO_VERSION: { type: 'plain_text', value: '1.24.0' },
           } },
         },

@@ -40,7 +40,13 @@ export const gitlabSteps: GitLabStep[] = [
   },
   {
     id: 'push-site',
-    done: async ({ state }) => state.commitSha !== undefined,
+    // サイトのファイルが追加済みなら（読み直し後の再開も）、既定のブランチの最新コミットのデプロイを待つ
+    async done({ gl, ref, state }) {
+      if (state.commitSha !== undefined) return true;
+      if (!(await gl.isBlogitSite(ref))) return false;
+      state.commitSha = await gl.getBranchHeadSha(ref, await gl.getDefaultBranch(ref));
+      return true;
+    },
     async run({ gl, config, ref, state }) {
       state.commitSha = await gl.commitFiles(ref, BRANCH, siteFiles(config), 'Set up blog with Blogit');
     },
@@ -51,10 +57,19 @@ export const gitlabSteps: GitLabStep[] = [
     async run({ gl, config, ref, state }) {
       const sha = state.commitSha;
       if (!sha) throw new Error('push-site has not run');
+      // 再試行時に前回のパイプラインが失敗していれば、ジョブを再実行してから待つ
+      const previous = await gl.findPipeline(ref, sha);
+      // 再実行の直後は前回の結果が返ることがあるため、実行中になるまで（最長 1 分）失敗扱いにしない
+      let retryUntil = 0;
+      if (previous && ['failed', 'canceled'].includes(previous.status)) {
+        await gl.retryPipeline(ref, previous.id);
+        retryUntil = Date.now() + 60_000;
+      }
       const deadline = Date.now() + DEPLOY_TIMEOUT_MS;
       while (Date.now() < deadline) {
         const pipeline = await gl.findPipeline(ref, sha);
-        if (pipeline) {
+        if (pipeline && !['failed', 'canceled'].includes(pipeline.status)) retryUntil = 0;
+        if (pipeline && Date.now() >= retryUntil) {
           state.runUrl = pipeline.web_url;
           if (pipeline.status === 'success') {
             let url: string | null = null;

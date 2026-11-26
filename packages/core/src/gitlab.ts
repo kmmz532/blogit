@@ -116,6 +116,38 @@ export class GitLabClient {
     return { id: p.id, ownerId: p.namespace.id, defaultBranch: p.default_branch ?? 'main' };
   }
 
+  // ファイルの中身（テキスト）。ファイルかブランチがなければ null
+  async getFileText(ref: RepoRef, path: string, branch = 'main'): Promise<string | null> {
+    const res = await fetch(
+      `${this.baseUrl}/api/v4/projects/${GitLabClient.project(ref)}/repository/files/${encodeURIComponent(path)}/raw?ref=${encodeURIComponent(branch)}`,
+      { headers: { Authorization: `Bearer ${this.token}` } },
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) throw new GitLabError(res.status, `GET ${path}: ${res.status} ${res.statusText}`);
+    return res.text();
+  }
+
+  // Blogit が作成したサイトのファイルが追加済みか（途中で止まったプロジェクトの再開に使う）
+  async isBlogitSite(ref: RepoRef): Promise<boolean> {
+    const branch = (await this.getRepositoryDetails(ref)).defaultBranch;
+    const toml = await this.getFileText(ref, 'hugo.toml', branch);
+    return toml !== null && toml.includes('[params.ghAdmin]') && toml.includes(`siteRepo = "${ref.owner}/${ref.repo}"`);
+  }
+
+  async getBranchHeadSha(ref: RepoRef, branch: string): Promise<string> {
+    const b = await this.request<{ commit: { id: string } }>('GET', `/projects/${GitLabClient.project(ref)}/repository/branches/${encodeURIComponent(branch)}`);
+    return b.commit.id;
+  }
+
+  async getDefaultBranch(ref: RepoRef): Promise<string> {
+    return (await this.getRepositoryDetails(ref)).defaultBranch;
+  }
+
+  // 失敗・中止したパイプラインのジョブを再実行する
+  async retryPipeline(ref: RepoRef, pipelineId: number): Promise<void> {
+    await this.request('POST', `/projects/${GitLabClient.project(ref)}/pipelines/${pipelineId}/retry`);
+  }
+
   // 公開 URL（初回のデプロイ前や、Pages の API が無い古い GitLab では null）
   async getPagesUrl(ref: RepoRef): Promise<string | null> {
     try {
