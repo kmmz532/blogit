@@ -30,7 +30,7 @@ Blogit の各テーマ（default / warm / cool）が共通で使う HTML・CSS�
 | `links` | サイドバーのリンク（`name`・`url`・`icon`） |
 | `footer` | フッターの文言 |
 | `icon` / `appleIcon` | ファビコン・apple-touch-icon |
-| `defaultThumbnail` | 記事カードの既定サムネイル |
+| `defaultThumbnail` | 記事カードの既定サムネイル。テーマの既定の画像は `/blogit/default-thumbnail.svg` |
 | `indexPageSize` | 検索索引 1 ファイルの件数 |
 | `cfAnalyticsToken` | Cloudflare Web Analytics（任意） |
 | `ogLocale` | og:locale。未設定なら言語から決める |

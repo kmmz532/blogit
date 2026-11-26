@@ -54,6 +54,9 @@ export function defaultBaseURL(c: BlogConfig): string {
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
+// 記事カードの既定のサムネイル（テーマの static/blogit/ にある）。作成時に画像を選ばなかったときに使う
+export const DEFAULT_THUMBNAIL = '/blogit/default-thumbnail.svg';
+
 // サイドバーのリンクに選べるアイコン。生成するサイトのテーマは Font Awesome 6.5.2 を読み込む
 export const LINK_ICONS = [
   { id: 'website', name: 'Webサイト', nameEn: 'Website', icon: 'fa-solid fa-house' },
@@ -151,7 +154,7 @@ enableRobotsTXT = true
   description = ${str(c.description)}
   author = ${str(c.author)}
   footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
-${c.favicon ? `  icon = ${str(`/favicon.${c.favicon.ext}`)}\n` : ''}${c.favicon?.ext === 'png' ? '  appleIcon = "/favicon.png"\n' : ''}${c.defaultThumbnail ? `  defaultThumbnail = ${str(`/default-thumbnail.${c.defaultThumbnail.ext}`)}\n` : ''}${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
+${c.favicon ? `  icon = ${str(`/favicon.${c.favicon.ext}`)}\n` : ''}${c.favicon?.ext === 'png' ? '  appleIcon = "/favicon.png"\n' : ''}  defaultThumbnail = ${str(c.defaultThumbnail ? `/default-thumbnail.${c.defaultThumbnail.ext}` : DEFAULT_THUMBNAIL)}\n${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
 ${admin}
 
 # テーマ（Blogit）。default / warm / cool から選べる

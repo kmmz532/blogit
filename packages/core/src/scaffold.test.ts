@@ -179,7 +179,9 @@ test('siteFiles: adds the uploaded favicon and default thumbnail as binary files
   assert.match(toml, /icon = "\/favicon\.png"/);
   assert.match(toml, /appleIcon = "\/favicon\.png"/);
   assert.match(toml, /defaultThumbnail = "\/default-thumbnail\.jpg"/);
-  assert.doesNotMatch(siteFiles(config)['hugo.toml'] as string, /icon =/);
+  const plain = siteFiles(config)['hugo.toml'] as string;
+  assert.doesNotMatch(plain, /icon =/);
+  assert.match(plain, /defaultThumbnail = "\/blogit\/default-thumbnail\.svg"/);
 });
 
 test('hugoToml: writes how to rebuild for each provider', () => {
