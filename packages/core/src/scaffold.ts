@@ -91,11 +91,13 @@ export function validateLinkUrl(url: string): boolean {
 }
 
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL。branch は記事を保存するブランチ（リポジトリの既定のブランチ）
-// 再ビルドに使うワークフロー。Cloudflare Pages は Git 連携でビルドするため、管理画面からは起動しない
-function buildWorkflow(c: BlogConfig): string | null {
-  if (c.provider === 'github-pages') return 'deploy.yml';
-  if (c.provider === 'gitlab-pages') return '.gitlab-ci.yml';
-  return null;
+// 管理画面の「最新の版で再ビルド」の設定。GitHub Pages はワークフロー、GitLab Pages はパイプラインを実行する。
+// Cloudflare Pages は push でビルドするため、空のコミットを積む（GitHub のみ。GitLab の API では空のコミットを作れない）
+function buildSettings(c: BlogConfig): string {
+  if (c.provider === 'github-pages') return '  buildWorkflow = "deploy.yml"';
+  if (c.provider === 'gitlab-pages') return '  buildWorkflow = ".gitlab-ci.yml"';
+  if (c.provider === 'cloudflare-pages' && !isGitLabRepo(c)) return '  buildCommit = true';
+  return '';
 }
 
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c), branch = 'main'): string {
@@ -111,9 +113,9 @@ ${gitlab ? `  provider = "gitlab"
   branch = ${str(branch)}
   siteRepo = ${str(repo)}
   siteBranch = ${str(branch)}
-  siteConfigPath = "hugo.toml"${buildWorkflow(c) ? `
-  # サイト設定の「バージョン」タブの「最新の版で再ビルド」で実行するビルド
-  buildWorkflow = ${str(buildWorkflow(c)!)}` : ''}${c.adminLogin && !gitlab ? `
+  siteConfigPath = "hugo.toml"${buildSettings(c) ? `
+  # サイト設定の「バージョン」タブの「最新の版で再ビルド」の方法
+${buildSettings(c)}` : ''}${c.adminLogin && !gitlab ? `
   # 「GitHub でログイン」（Blogit の OAuth App と認証用 Worker を利用する）
   oauthClientID = ${str(c.adminLogin.clientId)}
   oauthTokenURL = ${str(c.adminLogin.tokenUrl)}

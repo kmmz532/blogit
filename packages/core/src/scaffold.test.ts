@@ -182,8 +182,11 @@ test('siteFiles: adds the uploaded favicon and default thumbnail as binary files
   assert.doesNotMatch(siteFiles(config)['hugo.toml'] as string, /icon =/);
 });
 
-test('hugoToml: writes the rebuild workflow for GitHub Pages and GitLab Pages only', () => {
+test('hugoToml: writes how to rebuild for each provider', () => {
   assert.match(hugoToml(config), /buildWorkflow = "deploy\.yml"/);
   assert.match(hugoToml({ ...config, provider: 'gitlab-pages' }), /buildWorkflow = "\.gitlab-ci\.yml"/);
-  assert.doesNotMatch(hugoToml({ ...config, provider: 'cloudflare-pages' }), /buildWorkflow/);
+  const cloudflare = hugoToml({ ...config, provider: 'cloudflare-pages' });
+  assert.doesNotMatch(cloudflare, /buildWorkflow/);
+  assert.match(cloudflare, /buildCommit = true/);
+  assert.doesNotMatch(hugoToml({ ...config, provider: 'cloudflare-pages', gitlabUrl: 'https://gitlab.com' }), /buildCommit|buildWorkflow/);
 });
