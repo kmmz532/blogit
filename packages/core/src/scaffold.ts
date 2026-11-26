@@ -2,7 +2,7 @@ import { GITLAB_COM, normalizeGitLabUrl } from './gitlab.ts';
 import { fetchWithRetry } from './http.ts';
 import type { BlogConfig, FileMap } from './types.ts';
 
-export const HUGO_VERSION = '0.141.0';
+export const HUGO_VERSION = '0.169.0';
 const THEME_MODULE = 'github.com/kmmz532/blogit/themes';
 const ADMIN_MODULE = 'github.com/kmmz532/hugo-gh-admin';
 
@@ -363,10 +363,13 @@ jobs:
 `;
 }
 
-// GitLab CI で Hugo をビルドし、GitLab Pages に公開する。hugomods/hugo の exts イメージは Go と Git を含むため Hugo Modules を取得できる
+// GitLab CI で Hugo をビルドし、GitLab Pages に公開する。Hugo 公式のイメージは Go と Git を含むため Hugo Modules を取得できる
+// （hugomods/hugo は 0.154.5 以降のイメージが無い）。エントリポイントが hugo のため、空にしてスクリプトを実行する
 export function gitlabCi(): string {
   return `pages:
-  image: hugomods/hugo:exts-${HUGO_VERSION}
+  image:
+    name: ghcr.io/gohugoio/hugo:v${HUGO_VERSION}
+    entrypoint: [""]
   variables:
     GIT_DEPTH: 1
     HUGO_CACHEDIR: $CI_PROJECT_DIR/.hugo_cache
