@@ -454,3 +454,32 @@ fieldset {
     animation: none;
   }
 }
+
+/* スクリーンショット。ライト・ダークで画像を切り替える */
+.shot {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.shot img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.shot .shot-dark,
+.dark .shot .shot-light {
+  display: none;
+}
+
+.dark .shot .shot-dark {
+  display: block;
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}

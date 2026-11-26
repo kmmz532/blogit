@@ -94,3 +94,9 @@
     <p class="error-text">{error || message}</p>
   {/if}
 </div>
+
+<figure class="shot">
+  <img class="shot-light" src="./themes/default-home-light.png" alt="Blogitで作成したブログの例" width="1280" height="800" />
+  <img class="shot-dark" src="./themes/default-home-dark.png" alt="Blogitで作成したブログの例" width="1280" height="800" />
+  <figcaption class="hint">作成されるブログの例（Defaultテーマ）</figcaption>
+</figure>

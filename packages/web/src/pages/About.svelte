@@ -16,6 +16,25 @@
       <li>Blogitがリポジトリを作成し、サイトのファイルを追加する</li>
       <li>GitHub Actionsなどがサイトをビルドし、公開する</li>
     </ol>
+    <figure class="shot">
+      <img class="shot-light" src="./screens/setup-light.png" alt="ブログの作成画面" width="760" height="720" loading="lazy" />
+      <img class="shot-dark" src="./screens/setup-dark.png" alt="ブログの作成画面" width="760" height="720" loading="lazy" />
+      <figcaption class="hint">ブログの作成画面</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>テーマ</h2>
+    <p>3種類のテーマから選択できます。いずれもダークモードに対応しています。</p>
+    <div class="shots">
+      {#each [['default', 'Default'], ['warm', 'Warm'], ['cool', 'Cool']] as [name, label]}
+        <figure class="shot">
+          <img class="shot-light" src="./themes/{name}-home-light.png" alt="{label}テーマ" width="1280" height="800" loading="lazy" />
+          <img class="shot-dark" src="./themes/{name}-home-dark.png" alt="{label}テーマ" width="1280" height="800" loading="lazy" />
+          <figcaption class="hint">{label}</figcaption>
+        </figure>
+      {/each}
+    </div>
   </section>
 
   <section>
