@@ -14,7 +14,7 @@
     <li>Actions: Read（ビルドの確認）</li>
   </ul>
   <p>
-    Classic token の場合は <code>repo</code>・<code>workflow</code>・<code>read:org</code> を付与してください。
+    Classic token の場合は <code>repo</code>、<code>workflow</code>、<code>read:org</code> を付与してください。
     トークンはタブを閉じると破棄されます。
   </p>
 </div>
