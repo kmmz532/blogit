@@ -79,7 +79,7 @@
         report('enable-pages', 'done');
 
         report('push-site', 'running');
-        const commitSha = await repoClient.commitFiles(ref, details.defaultBranch, siteFiles(config), 'Set up blog with Blogit');
+        const commitSha = await repoClient.commitFiles(ref, details.defaultBranch, siteFiles(config, { branch: details.defaultBranch }), 'Set up blog with Blogit');
         setupState.commitSha = commitSha;
         report('push-site', 'done');
 
@@ -120,6 +120,7 @@
           if (e) {
             error = e instanceof Error ? e.message : String(e);
             if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。下で権限を確認して入れ直してください）';
+            else if (id === 'enable-pages' && config.private && /: 422 /.test(error)) error += '（非公開リポジトリで GitHub Pages を使うには、GitHub の有料プランが必要です）';
           }
         });
         siteUrl = setupState.siteUrl ?? '';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GitHubClient, GitLabClient, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
+  import { GitHubClient, GitLabClient, GITLAB_COM, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
   import { clearGitLab, completeGitLabOAuth, loadGitLab } from './lib/gitlab';
@@ -30,8 +30,8 @@
     const client = new GitLabClient(url, token);
     owners = await client.listOwners();
     gl = client;
-    // Cloudflare の接続から戻ったときは選択を保つ。それ以外は GitLab Pages
-    if (selectedProvider !== 'cloudflare-pages') selectedProvider = 'gitlab-pages';
+    // Cloudflare の接続から戻ったときは選択を保つ。それ以外と、Cloudflare の Git 連携が使えないセルフホストは GitLab Pages
+    if (selectedProvider !== 'cloudflare-pages' || client.baseUrl !== GITLAB_COM) selectedProvider = 'gitlab-pages';
   }
 
   async function connectCloudflare() {

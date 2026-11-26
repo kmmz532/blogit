@@ -53,7 +53,7 @@ export const steps: Step[] = [
       // 独自ドメイン（例: ユーザーの github.io に設定したドメイン）があれば、その URL を baseURL にする
       const pagesUrl = await gh.getPagesUrl(ref);
       const baseURL = pagesUrl ? pagesUrl.replace(/\/?$/, '/') : undefined;
-      state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config, { baseURL }), 'Set up blog with Blogit');
+      state.commitSha = await gh.commitFiles(ref, branch, siteFiles(config, { baseURL, branch }), 'Set up blog with Blogit');
     },
   },
   {

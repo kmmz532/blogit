@@ -64,7 +64,16 @@ export async function completeGitLabOAuth(): Promise<{ url: string; token: strin
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
   const expected = storage()?.getItem(STATE_KEY);
-  if (!code || !expected || params.get('state') !== expected) return null;
+  if (!expected || params.get('state') !== expected) return null;
+  // 認可画面で拒否されたときは ?error=...&state=... で戻る
+  const denied = params.get('error');
+  if (denied) {
+    history.replaceState(null, '', location.pathname);
+    storage()?.removeItem(STATE_KEY);
+    storage()?.removeItem(VERIFIER_KEY);
+    throw new Error(params.get('error_description') ?? denied);
+  }
+  if (!code) return null;
   const verifier = storage()?.getItem(VERIFIER_KEY);
   history.replaceState(null, '', location.pathname);
   storage()?.removeItem(STATE_KEY);

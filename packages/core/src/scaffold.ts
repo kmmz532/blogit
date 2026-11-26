@@ -45,8 +45,8 @@ export function defaultBaseURL(c: BlogConfig): string {
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
-// baseURL は実際の公開 URL。省略時は選択された公開先の URL
-export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c)): string {
+// baseURL は実際の公開 URL。省略時は選択された公開先の URL。branch は記事を保存するブランチ（リポジトリの既定のブランチ）
+export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c), branch = 'main'): string {
   const repo = `${c.owner}/${c.repo}`;
   const gitlab = isGitLabRepo(c);
   // 管理画面は hugo-gh-admin（テーマが取り込む）。GitLab のサイトでは provider = "gitlab" にする
@@ -56,9 +56,9 @@ ${gitlab ? `  provider = "gitlab"
   gitlabURL = ${str(gitlabUrl(c))}
 ` : ''}  lang = ${str(c.language)}
   repo = ${str(repo)}
-  branch = "main"
+  branch = ${str(branch)}
   siteRepo = ${str(repo)}
-  siteBranch = "main"
+  siteBranch = ${str(branch)}
   siteConfigPath = "hugo.toml"`;
   return `title = ${str(c.title)}
 baseURL = ${str(baseURL)}
@@ -111,12 +111,12 @@ go 1.24.0
 `;
 }
 
-export function deployWorkflow(): string {
+export function deployWorkflow(branch = 'main'): string {
   return `name: deploy
 
 on:
   push:
-    branches: [main]
+    branches: [${JSON.stringify(branch)}]
   workflow_dispatch:
 
 permissions:
@@ -225,17 +225,17 @@ ${baseURL === '/'
 }
 
 // 単一リポジトリ型のサイト一式
-export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBaseURL(c) } = {}): FileMap {
+export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBaseURL(c), branch = 'main' } = {}): FileMap {
   const post = firstPost(c, now);
   const files: FileMap = {
-    'hugo.toml': hugoToml(c, baseURL),
+    'hugo.toml': hugoToml(c, baseURL, branch),
     'go.mod': goMod(c),
     '.gitignore': 'public/\nresources/\n.hugo_build.lock\n.hugo_cache/\n',
     'README.md': readme(c, baseURL),
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };
-  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
+  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch);
   if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi();
   return files;
 }

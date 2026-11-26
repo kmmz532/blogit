@@ -81,6 +81,13 @@ test('siteFiles: GitLab repository published to Cloudflare Pages', () => {
   assert.match(files['go.mod'], /^module gitlab\.com\//m);
 });
 
+test('siteFiles: uses the repository default branch', () => {
+  const files = siteFiles(config, { branch: 'master' });
+  assert.match(files['hugo.toml'], /^  branch = "master"$/m);
+  assert.match(files['hugo.toml'], /^  siteBranch = "master"$/m);
+  assert.match(files['.github/workflows/deploy.yml'], /branches: \["master"\]/);
+});
+
 test('normalizeGitLabUrl', () => {
   assert.equal(normalizeGitLabUrl('gitlab.com'), 'https://gitlab.com');
   assert.equal(normalizeGitLabUrl('https://git.example.com/gitlab/'), 'https://git.example.com/gitlab');
