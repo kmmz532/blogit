@@ -140,7 +140,7 @@ enableRobotsTXT = true
   description = ${str(c.description)}
   author = ${str(c.author)}
   footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
-${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
+${c.favicon ? `  icon = ${str(`/favicon.${c.favicon.ext}`)}\n` : ''}${c.favicon?.ext === 'png' ? '  appleIcon = "/favicon.png"\n' : ''}${c.defaultThumbnail ? `  defaultThumbnail = ${str(`/default-thumbnail.${c.defaultThumbnail.ext}`)}\n` : ''}${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
 ${admin}
 
 # テーマ（Blogit）。default / warm / cool から選べる
@@ -311,6 +311,8 @@ export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBa
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };
+  if (c.favicon) files[`static/favicon.${c.favicon.ext}`] = { base64: c.favicon.base64 };
+  if (c.defaultThumbnail) files[`static/default-thumbnail.${c.defaultThumbnail.ext}`] = { base64: c.defaultThumbnail.base64 };
   if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch);
   if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi();
   return files;

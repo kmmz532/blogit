@@ -263,5 +263,6 @@
       <a class="button secondary" href="{siteUrl}admin/" target="_blank" rel="noopener">{t('writePost')}</a>
       <a class="button secondary" href={onGitLab && glClient ? `${glClient.baseUrl}/${config.owner}/${config.repo}` : `https://github.com/${config.owner}/${config.repo}`} target="_blank" rel="noopener">{t('repository')}</a>
     </div>
+    <p class="hint">{t('changeLaterBefore')}<a href="{siteUrl}admin/settings/" target="_blank" rel="noopener">{t('changeLaterLink')}</a>{t('changeLaterAfter')}</p>
   {/if}
 </div>

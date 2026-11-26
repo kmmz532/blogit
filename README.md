@@ -18,6 +18,7 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 
 - リポジトリは公開・非公開のどちらでも作成できる。GitHub Pagesを非公開リポジトリで利用するには、GitHubの有料プランが必要。
 - Cloudflare Pagesを利用する場合は、CloudflareのダッシュボードでGitHubまたはGitLabとの連携を済ませておく。
+- 高度な設定では、説明・著者・サイドバーのリンク・ファビコン・記事カードの既定のサムネイルなども設定できる。設定しなかった項目も、作成後に管理画面のサイト設定から変更できる。
 - テーマは `default`・`warm`・`cool` から選択する。既定ではビルドのたびに最新のテーマを利用し、高度な設定で作成時の版に固定することもできる。
 - GitHubのリポジトリでは、管理画面に「GitHubでログイン」を設定する（BlogitのOAuth Appと `workers/auth` を共用する）。高度な設定でオフにすると、管理画面にはトークンを入力してログインする。
 - テーマ（`themes/base`）は、Blogitで作成したブログ以外のHugoサイトからも取り込める。見た目は、サイト側の `layouts/` と `assets/` で上書きする（[themes/base/README.md](themes/base/README.md)）。

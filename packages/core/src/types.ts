@@ -25,6 +25,10 @@ export interface BlogConfig {
   sidebar?: boolean;
   // 一覧の1ページあたりの記事数。省略時は10
   pagerSize?: number;
+  // ファビコン（ico・png・svg）。png なら apple-touch-icon にも使う。省略時は設定しない
+  favicon?: UploadedImage;
+  // 記事カードの既定のサムネイル。省略時は画像なし
+  defaultThumbnail?: UploadedImage;
   // true ならリポジトリを非公開で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;
@@ -60,5 +64,15 @@ export interface RepoRef {
   repo: string;
 }
 
-// 生成するファイル（パス → 中身）
-export type FileMap = Record<string, string>;
+// 生成するファイル（パス → 中身）。画像などのバイナリは Base64 で持つ
+export type FileMap = Record<string, string | BinaryFile>;
+
+export interface BinaryFile {
+  base64: string;
+}
+
+// 作成時にアップロードする画像（ファビコン・既定のサムネイル）。ext は小文字の拡張子
+export interface UploadedImage {
+  ext: string;
+  base64: string;
+}

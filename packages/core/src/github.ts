@@ -116,10 +116,13 @@ export class GitHubClient {
     const base = `/repos/${ref.owner}/${ref.repo}/git`;
     const head = await this.request<{ object: { sha: string } }>('GET', `${base}/ref/heads/${branch}`);
     const parent = await this.request<{ tree: { sha: string } }>('GET', `${base}/commits/${head.object.sha}`);
-    const tree = await this.request<{ sha: string }>('POST', `${base}/trees`, {
-      base_tree: parent.tree.sha,
-      tree: Object.entries(files).map(([path, content]) => ({ path, mode: '100644', type: 'blob', content })),
-    });
+    // テキストはツリーに直接書く。バイナリは先に Base64 で blob を作り、その SHA を指す
+    const entries = await Promise.all(Object.entries(files).map(async ([path, content]) => {
+      if (typeof content === 'string') return { path, mode: '100644', type: 'blob', content };
+      const blob = await this.request<{ sha: string }>('POST', `${base}/blobs`, { content: content.base64, encoding: 'base64' });
+      return { path, mode: '100644', type: 'blob', sha: blob.sha };
+    }));
+    const tree = await this.request<{ sha: string }>('POST', `${base}/trees`, { base_tree: parent.tree.sha, tree: entries });
     const commit = await this.request<{ sha: string }>('POST', `${base}/commits`, {
       message,
       tree: tree.sha,

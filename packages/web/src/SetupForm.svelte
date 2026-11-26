@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
+  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName, type UploadedImage } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
   import { adminLoginSettings } from './lib/auth';
   import { loadDraft, saveDraft } from './lib/draft';
@@ -56,6 +56,26 @@
   let pagerSize = $state(pick('pagerSize', 10));
   let themeAutoUpdate = $state(pick('themeAutoUpdate', true));
   let useBlogitLogin = $state(pick('useBlogitLogin', true));
+  // ファビコンと既定のサムネイル。容量が大きいので下書きには保存しない
+  let favicon = $state<UploadedImage | null>(null);
+  let defaultThumbnail = $state<UploadedImage | null>(null);
+  let imageError = $state('');
+
+  // 選んだ画像を Base64 で読む。形式と容量が合わなければ選択を取り消す
+  async function readImage(event: Event, exts: string[], maxMB: number, set: (image: UploadedImage | null) => void) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    imageError = '';
+    if (!file) { set(null); return; }
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!exts.includes(ext)) imageError = t('imageExtension', { exts: exts.join('・') });
+    else if (file.size > maxMB * 1024 * 1024) imageError = t('imageTooLarge', { size: maxMB });
+    if (imageError) { input.value = ''; set(null); return; }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    set({ ext: ext === 'jpeg' ? 'jpg' : ext, base64: btoa(binary) });
+  }
   const adminLogin = adminLoginSettings();
   $effect(() => {
     saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate, useBlogitLogin });
@@ -149,6 +169,8 @@
         ...(bio.trim() ? { bio: bio.trim() } : {}),
         ...(linkValues.length ? { links: linkValues } : {}),
         ...(sidebar ? {} : { sidebar: false }),
+        ...(favicon ? { favicon } : {}),
+        ...(defaultThumbnail ? { defaultThumbnail } : {}),
         ...(pagerSize !== 10 ? { pagerSize } : {}),
       });
     } catch (err) {
@@ -280,6 +302,7 @@
   <details class="card">
     <summary class="section-title">{t('advanced')}</summary>
     <div class="stack section-body">
+      <p class="hint">{t('changeLaterHint')}</p>
       <div class="field">
         <label for="description">{t('description')}</label>
         <input id="description" type="text" bind:value={description} />
@@ -314,6 +337,17 @@
           </button>
         </div>
       </fieldset>
+      <div class="field">
+        <label for="favicon">{t('favicon')}</label>
+        <input id="favicon" type="file" accept=".ico,.png,.svg,image/x-icon,image/png,image/svg+xml" onchange={(e) => readImage(e, ['ico', 'png', 'svg'], 1, (image) => (favicon = image))} />
+        <p class="hint">{t('faviconHint')}</p>
+      </div>
+      <div class="field">
+        <label for="default-thumbnail">{t('defaultThumbnail')}</label>
+        <input id="default-thumbnail" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.svg,image/png,image/jpeg,image/webp,image/gif,image/svg+xml" onchange={(e) => readImage(e, ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'], 5, (image) => (defaultThumbnail = image))} />
+        <p class="hint">{t('defaultThumbnailHint')}</p>
+      </div>
+      {#if imageError}<p class="error-text">{imageError}</p>{/if}
       <label class="checkbox">
         <input type="checkbox" bind:checked={sidebar} />
         {t('showSidebar')}

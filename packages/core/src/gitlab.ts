@@ -106,7 +106,9 @@ export class GitLabClient {
     const commit = await this.request<{ id: string }>('POST', `/projects/${GitLabClient.project(ref)}/repository/commits`, {
       branch,
       commit_message: message,
-      actions: Object.entries(files).map(([file_path, content]) => ({ action: 'create', file_path, content })),
+      actions: Object.entries(files).map(([file_path, content]) => (typeof content === 'string'
+        ? { action: 'create', file_path, content }
+        : { action: 'create', file_path, content: content.base64, encoding: 'base64' })),
     });
     return commit.id;
   }

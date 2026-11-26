@@ -170,3 +170,14 @@ test('hugoToml: writes the admin login settings only for GitHub repositories', (
   assert.doesNotMatch(hugoToml(config), /oauthClientID/);
   assert.doesNotMatch(hugoToml({ ...config, provider: 'gitlab-pages', adminLogin }), /oauthClientID/);
 });
+
+test('siteFiles: adds the uploaded favicon and default thumbnail as binary files', () => {
+  const files = siteFiles({ ...config, favicon: { ext: 'png', base64: 'AAAA' }, defaultThumbnail: { ext: 'jpg', base64: 'BBBB' } });
+  assert.deepEqual(files['static/favicon.png'], { base64: 'AAAA' });
+  assert.deepEqual(files['static/default-thumbnail.jpg'], { base64: 'BBBB' });
+  const toml = files['hugo.toml'] as string;
+  assert.match(toml, /icon = "\/favicon\.png"/);
+  assert.match(toml, /appleIcon = "\/favicon\.png"/);
+  assert.match(toml, /defaultThumbnail = "\/default-thumbnail\.jpg"/);
+  assert.doesNotMatch(siteFiles(config)['hugo.toml'] as string, /icon =/);
+});
