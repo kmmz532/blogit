@@ -1,13 +1,15 @@
 <script lang="ts">
-  import { GitHubClient, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
+  import { GitHubClient, GitLabClient, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
+  import { clearGitLab, completeGitLabOAuth, loadGitLab } from './lib/gitlab';
   import { clearCloudflareToken, CloudflareClient, completeCloudflareOAuth, loadCloudflareToken, startCloudflareOAuth, type CloudflareAccount } from './lib/cloudflare';
   import Login from './Login.svelte';
   import Progress from './Progress.svelte';
   import SetupForm from './SetupForm.svelte';
 
   let gh = $state<GitHubClient | null>(null);
+  let gl = $state<GitLabClient | null>(null);
   let owners = $state<Owner[]>([]);
   let config = $state<BlogConfig | null>(null);
   let cloudflareAccounts = $state<CloudflareAccount[]>([]);
@@ -22,6 +24,13 @@
     const client = new GitHubClient(token);
     owners = await client.listOwners();
     gh = client;
+  }
+
+  async function signInGitLab(url: string, token: string) {
+    const client = new GitLabClient(url, token);
+    owners = await client.listOwners();
+    gl = client;
+    selectedProvider = 'gitlab-pages';
   }
 
   async function connectCloudflare() {
@@ -58,6 +67,19 @@
       cloudflareError = e instanceof Error ? e.message : String(e);
     }
 
+    // GitLab の戻り（?code=）は GitHub の処理より先に取り出す
+    try {
+      const saved = (await completeGitLabOAuth()) ?? loadGitLab();
+      if (saved) {
+        await signInGitLab(saved.url, saved.token);
+        loading = false;
+        return;
+      }
+    } catch (e) {
+      clearGitLab();
+      loginError = e instanceof Error ? e.message : String(e);
+    }
+
     try {
       const token = (await completeOAuth()) ?? loadToken();
       if (token) await signIn(token);
@@ -72,7 +94,9 @@
   function signOut() {
     clearToken();
     clearCloudflareToken();
+    clearGitLab();
     gh = null;
+    gl = null;
     owners = [];
     config = null;
     cloudflareAccounts = [];
@@ -111,15 +135,21 @@
 <main class="main">
   {#if loading}
     <p class="lead">読み込み中…</p>
+  {:else if gl}
+    {#if !config}
+      <SetupForm platform="gitlab" client={gl} {owners} cloudflareAccounts={[]} cloudflareConnected={false} cloudflareError="" selectedCloudflareAccountId="" selectedProvider="gitlab-pages" gitlabUrl={gl.baseUrl} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={() => {}} onSubmit={(c) => (config = c)} />
+    {:else}
+      <Progress {gl} {config} onBack={() => (config = null)} />
+    {/if}
   {:else if !gh}
-    <Login onSignIn={signIn} error={loginError} />
+    <Login onSignIn={signIn} onSignInGitLab={signInGitLab} error={loginError} />
   {:else if !config}
-    <SetupForm {gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
+    <SetupForm platform="github" client={gh} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
   {:else}
     <Progress {gh} {config} onBack={() => (config = null)} />
   {/if}
 </main>
 
 <footer class="footer">
-  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin + GitHub Pages / Cloudflare Pages
+  <a href="https://github.com/kmmz532/blogit">Blogit</a> — Hugo + hugo-gh-admin / hugo-gl-admin + GitHub Pages / Cloudflare Pages / GitLab Pages
 </footer>

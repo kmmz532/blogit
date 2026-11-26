@@ -1,9 +1,10 @@
+{{- $adminNS := partial "admin-ns.html" . -}}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {{- /* アクセス解析（Cloudflare Web Analytics）は params.cfAnalyticsToken があり、公開ビルドの通常ページだけ */}}
 {{- $cfToken := "" }}
 {{- if and site.Params.cfAnalyticsToken (not hugo.IsServer) (not .Params.robots) }}{{ $cfToken = site.Params.cfAnalyticsToken }}{{ end }}
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://platform.twitter.com https://platform.twimg.com{{ if $cfToken }} https://static.cloudflareinsights.com{{ end }}{{ partial "gh-admin/csp.html" . }}; object-src 'none'; base-uri 'self'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://platform.twitter.com https://platform.twimg.com{{ if $cfToken }} https://static.cloudflareinsights.com{{ end }}{{ partial (printf "%s/csp.html" $adminNS) . }}; object-src 'none'; base-uri 'self'">
 {{- /* ダークモードの初期化。描画前に適用してちらつきを防ぐ */}}
 <script>
   (function () {
@@ -74,13 +75,13 @@
 {{- /* 数式の見た目（KaTeX の CSS。ビルド時の HTML とプレビューの両方に使う） */}}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous" referrerpolicy="no-referrer">
 {{- /* CSS は分けて書き、ここで順番どおりに 1 ファイルへ連結する */ -}}
-{{- $parts := slice (resources.Get "css/base.css") (resources.Get "css/layout.css") (resources.Get "css/list.css") (resources.Get "css/post.css") (resources.Get "gh-admin/editor.css") (resources.Get "css/syntax.css") -}}
+{{- $parts := slice (resources.Get "css/base.css") (resources.Get "css/layout.css") (resources.Get "css/list.css") (resources.Get "css/post.css") (resources.Get (printf "%s/editor.css" $adminNS)) (resources.Get "css/syntax.css") -}}
 {{- /* テーマの見た目の差分（色・フォント・装飾）。base の CSS の後に読む */ -}}
 {{- with resources.Get "css/theme.css" }}{{ $parts = $parts | append . }}{{ end -}}
 {{- $main := resources.Concat "css/main.css" $parts | minify | fingerprint }}
 <link rel="stylesheet" href="{{ $main.RelPermalink }}" integrity="{{ $main.Data.Integrity }}">
 {{- /* 管理画面の部品（meta・CSS・admin.js）。CSS は本体の bundle の後に読む */}}
-{{ partial "gh-admin/head.html" . }}
+{{ partial (printf "%s/head.html" $adminNS) . }}
 {{- with $cfToken }}
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{{ dict "token" . | jsonify }}'></script>
 {{- end }}

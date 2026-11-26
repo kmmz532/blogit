@@ -1,0 +1,4 @@
+{{- /* 管理画面モジュールの名前空間。params.blogit.admin が "gitlab" なら hugo-gl-admin（サイト側で取り込む）、それ以外は hugo-gh-admin */ -}}
+{{- $ns := "gh-admin" -}}
+{{- if eq (site.Params.blogit.admin | default "") "gitlab" }}{{ $ns = "gl-admin" }}{{ end -}}
+{{- return $ns -}}

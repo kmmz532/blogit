@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { pagesBaseURL, cloudflarePagesBaseURL, validateRepoName, type BlogConfig, type DeploymentProvider, type GitHubClient, type Owner, type ThemeName } from '@blogit/core';
+  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateGitLabProjectPath, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
 
   let {
-    gh, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, selectedCloudflareAccountId, selectedProvider, onSelectProvider, onConnectCloudflare, onSelectCloudflareAccount, onSubmit,
+    platform, client, gitlabUrl = GITLAB_COM, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, selectedCloudflareAccountId, selectedProvider, onSelectProvider, onConnectCloudflare, onSelectCloudflareAccount, onSubmit,
   }: {
-    gh: GitHubClient;
+    platform: 'github' | 'gitlab';
+    // GitHubClient と GitLabClient の共通部分だけを使う
+    client: { repoExists(ref: RepoRef): Promise<boolean> };
+    gitlabUrl?: string;
     owners: Owner[];
     cloudflareAccounts: CloudflareAccount[];
     cloudflareConnected: boolean;
@@ -41,12 +44,15 @@
   let connecting = $state(false);
   let error = $state('');
 
-  const repoValid = $derived(validateRepoName(repo));
+  const isGitLab = $derived(platform === 'gitlab');
+  const repoValid = $derived(isGitLab ? validateGitLabProjectPath(repo) : validateRepoName(repo));
   const cloudflareRepoValid = $derived(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(repo));
   const url = $derived(selectedProvider === 'cloudflare-pages'
     ? (cloudflareRepoValid ? cloudflarePagesBaseURL(repo) : '')
-    : (repoValid ? pagesBaseURL(owner, repo) : ''));
-  const canSubmit = $derived(repoValid && title.trim() && (selectedProvider === 'github-pages'
+    : !repoValid ? ''
+    : isGitLab ? (gitlabUrl === GITLAB_COM ? gitlabPagesBaseURL(owner, repo) : '')
+    : pagesBaseURL(owner, repo));
+  const canSubmit = $derived(repoValid && title.trim() && (selectedProvider !== 'cloudflare-pages'
     || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
 
   async function connect() {
@@ -71,7 +77,7 @@
         error = '先にCloudflareアカウントを接続してください。';
         return;
       }
-      if (await gh.repoExists({ owner, repo })) {
+      if (await client.repoExists({ owner, repo })) {
         error = `${owner}/${repo} はすでにあります。別の名前にしてください。`;
         return;
       }
@@ -80,6 +86,7 @@
         title: title.trim(), description: description.trim(), author: author.trim(),
         owner, ownerType, repo, provider: selectedProvider,
         ...(selectedProvider === 'cloudflare-pages' ? { cloudflareAccountId: selectedCloudflareAccountId } : {}),
+        ...(isGitLab ? { gitlabUrl } : {}),
         theme, language,
       });
     } catch (err) {
@@ -91,7 +98,7 @@
 </script>
 
 <h1 class="page-title">ブログを作る</h1>
-<p class="lead">GitHub にリポジトリを作成し、選択したサービスに公開します。</p>
+<p class="lead">{isGitLab ? `GitLab（${gitlabUrl}）にプロジェクトを作成し、GitLab Pages に公開します。` : 'GitHub にリポジトリを作成し、選択したサービスに公開します。'}</p>
 
 <form class="stack" onsubmit={submit}>
   <section class="card stack">
@@ -99,6 +106,13 @@
     <fieldset class="field">
       <legend>ホスティングサービス</legend>
       <div class="choices">
+        {#if isGitLab}
+        <label class="choice">
+          <input type="radio" name="provider" value="gitlab-pages" checked />
+          <span class="choice-name">GitLab Pages</span>
+          <span class="hint">GitLab CI/CD でビルド・公開</span>
+        </label>
+        {:else}
         <label class="choice">
           <input type="radio" name="provider" value="github-pages" checked={selectedProvider === 'github-pages'} onchange={() => onSelectProvider('github-pages')} />
           <span class="choice-name">GitHub Pages</span>
@@ -109,6 +123,7 @@
           <span class="choice-name">Cloudflare Pages</span>
           <span class="hint">Cloudflare の Git 連携で自動ビルド・公開</span>
         </label>
+        {/if}
       </div>
     </fieldset>
     {#if selectedProvider === 'cloudflare-pages'}
@@ -175,11 +190,11 @@
       {:else if selectedProvider === 'cloudflare-pages'}
         <p class="error-text">Cloudflare Pages のプロジェクト名は小文字英数字とハイフンのみ使用できます。</p>
       {:else if repoValid}
-        <p class="hint">GitHub Pages URL: {url}</p>
+        <p class="hint">公開 URL は初回の公開後に GitLab が決定します。</p>
       {:else}
-        <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます。</p>
+        <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
       {/if}
-      <p class="hint">リポジトリは公開（Public）で作成します。</p>
+      <p class="hint">{isGitLab ? 'プロジェクト' : 'リポジトリ'}は公開（Public）で作成します。</p>
     </div>
   </section>
 

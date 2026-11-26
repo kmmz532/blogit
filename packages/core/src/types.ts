@@ -1,6 +1,6 @@
 export type ThemeName = 'default' | 'warm' | 'cool';
 export type Language = 'ja' | 'en';
-export type DeploymentProvider = 'github-pages' | 'cloudflare-pages';
+export type DeploymentProvider = 'github-pages' | 'cloudflare-pages' | 'gitlab-pages';
 
 // ウィザードで集める入力。ここから生成するファイルとセットアップ手順がすべて決まる
 export interface BlogConfig {
@@ -13,6 +13,8 @@ export interface BlogConfig {
   repo: string;
   provider: DeploymentProvider;
   cloudflareAccountId?: string;
+  // provider が gitlab-pages のときの GitLab インスタンスの URL（例: https://gitlab.com）。owner はネームスペースのフルパス
+  gitlabUrl?: string;
   theme: ThemeName;
   language: Language;
 }

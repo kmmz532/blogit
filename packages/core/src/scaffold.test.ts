@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { hugoToml, pagesBaseURL, siteFiles } from './scaffold.ts';
+import { normalizeGitLabUrl } from './gitlab.ts';
+import { gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateGitLabProjectPath } from './scaffold.ts';
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
@@ -11,6 +12,7 @@ const config: BlogConfig = {
   owner: 'Kmmz532',
   ownerType: 'User',
   repo: 'my-blog',
+  provider: 'github-pages',
   theme: 'warm',
   language: 'ja',
 };
@@ -39,4 +41,48 @@ test('validateRepoName', () => {
   assert.ok(validateRepoName('my-blog'));
   assert.ok(!validateRepoName('my blog'));
   assert.ok(!validateRepoName('..'));
+});
+
+const gitlab: BlogConfig = { ...config, owner: 'Example-Group/sub', provider: 'gitlab-pages', gitlabUrl: 'https://gitlab.com' };
+
+test('gitlabPagesBaseURL: user page, project page and subgroup', () => {
+  assert.equal(gitlabPagesBaseURL('Alice', 'blog'), 'https://alice.gitlab.io/blog/');
+  assert.equal(gitlabPagesBaseURL('alice', 'alice.gitlab.io'), 'https://alice.gitlab.io/');
+  assert.equal(gitlabPagesBaseURL('Example-Group/sub', 'blog'), 'https://example-group.gitlab.io/sub/blog/');
+});
+
+test('siteFiles: GitLab Pages uses .gitlab-ci.yml and CI_PAGES_URL', () => {
+  const files = siteFiles(gitlab, { now: new Date('2026-11-25T00:00:00Z') });
+  assert.ok(!('.github/workflows/deploy.yml' in files));
+  assert.match(files['.gitlab-ci.yml'], /^pages:$/m);
+  assert.match(files['.gitlab-ci.yml'], /--baseURL "\$\{CI_PAGES_URL\}\/"/);
+  assert.match(files['hugo.toml'], /^baseURL = "https:\/\/example-group\.gitlab\.io\/sub\/my-blog\/"$/m);
+  assert.match(files['hugo.toml'], /^\[params\.glAdmin\]$/m);
+  assert.match(files['hugo.toml'], /^  gitlabURL = "https:\/\/gitlab\.com"$/m);
+  assert.match(files['hugo.toml'], /^  repo = "Example-Group\/sub\/my-blog"$/m);
+  assert.match(files['hugo.toml'], /^  admin = "gitlab"$/m);
+  assert.match(files['hugo.toml'], /path = "github\.com\/kmmz532\/hugo-gl-admin"/);
+  assert.doesNotMatch(files['hugo.toml'], /ghAdmin/);
+  assert.match(files['content/admin.md'], /^type: "gl-admin"$/m);
+  assert.match(files['content/login.md'], /^url: \/login\/$/m);
+  assert.match(files['go.mod'], /^module gitlab\.com\/Example-Group\/sub\/my-blog$/m);
+});
+
+test('siteFiles: self-hosted GitLab uses its host and a relative baseURL', () => {
+  const files = siteFiles({ ...gitlab, gitlabUrl: 'git.example.com/' });
+  assert.match(files['hugo.toml'], /^baseURL = "\/"$/m);
+  assert.match(files['go.mod'], /^module git\.example\.com\//m);
+});
+
+test('normalizeGitLabUrl', () => {
+  assert.equal(normalizeGitLabUrl('gitlab.com'), 'https://gitlab.com');
+  assert.equal(normalizeGitLabUrl('https://git.example.com/gitlab/'), 'https://git.example.com/gitlab');
+  assert.equal(normalizeGitLabUrl(''), null);
+});
+
+test('validateGitLabProjectPath', () => {
+  assert.ok(validateGitLabProjectPath('my-blog'));
+  assert.ok(!validateGitLabProjectPath('-blog'));
+  assert.ok(!validateGitLabProjectPath('blog.git'));
+  assert.ok(!validateGitLabProjectPath('my blog'));
 });

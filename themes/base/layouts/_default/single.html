@@ -37,5 +37,5 @@
 {{ end }}
 
 {{ define "scripts" }}
-{{ partial "gh-admin/article-scripts.html" . }}
+{{ partial (printf "%s/article-scripts.html" (partial "admin-ns.html" .)) . }}
 {{ end }}

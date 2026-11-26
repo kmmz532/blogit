@@ -1,3 +1,4 @@
+import { GITLAB_COM, normalizeGitLabUrl } from './gitlab.ts';
 import type { BlogConfig, FileMap } from './types.ts';
 
 export const HUGO_VERSION = '0.141.0';
@@ -14,14 +15,87 @@ export function cloudflarePagesBaseURL(repo: string): string {
   return `https://${projectName}.pages.dev/`;
 }
 
+// gitlab.com の Pages の URL の目安。トップレベルのネームスペースがサブドメインになり、サブグループはパスに入る。
+// 一意のドメインが有効なプロジェクトでは実際の URL と異なるため、ビルド時は CI_PAGES_URL を使う
+export function gitlabPagesBaseURL(owner: string, repo: string): string {
+  const [top, ...subgroups] = owner.toLowerCase().split('/');
+  const host = `${top}.gitlab.io`;
+  if (subgroups.length === 0 && repo.toLowerCase() === host) return `https://${host}/`;
+  return `https://${host}/${[...subgroups, repo].join('/')}/`;
+}
+
+// GitLab のプロジェクトのパスとして受け付ける形か
+export function validateGitLabProjectPath(name: string): boolean {
+  return /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9_])?$/.test(name)
+    && !/\.(git|atom)$/i.test(name)
+    && !/[._-]{2}/.test(name);
+}
+
+const gitlabUrl = (c: BlogConfig) => normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM;
+const isGitLabCom = (c: BlogConfig) => gitlabUrl(c) === GITLAB_COM;
+const GL_ADMIN_MODULE = 'github.com/kmmz532/hugo-gl-admin';
+
+// GitLab のサイトでは管理画面のページを hugo-gl-admin のレイアウトに向ける（テーマの同名ページを上書きする）
+function gitlabAdminPages(c: BlogConfig): FileMap {
+  const ja = c.language === 'ja';
+  const pages: [string, string, string][] = [
+    ['admin', '/admin/', ja ? '一括管理' : 'Admin'],
+    ['admin-images', '/admin/images/', ja ? '画像の管理' : 'Images'],
+    ['admin-settings', '/admin/settings/', ja ? '設定' : 'Settings'],
+    ['edit', '/edit/', ja ? '記事の編集' : 'Edit'],
+    ['login', '/login/', ja ? 'ログイン' : 'Login'],
+  ];
+  return Object.fromEntries(pages.map(([layout, url, title]) => [`content/${layout}.md`, `---
+title: ${str(title)}
+type: "gl-admin"
+layout: ${layout}
+url: ${url}
+sidebar: false
+hide:
+  rightbar: true
+robots: noindex
+sitemap:
+  disable: true
+---
+`]));
+}
+
+// 選択された公開先の URL。セルフホストの GitLab は Pages のドメインが不明なため / にする（ビルド時に CI_PAGES_URL で上書きする）
+export function defaultBaseURL(c: BlogConfig): string {
+  if (c.provider === 'cloudflare-pages') return cloudflarePagesBaseURL(c.repo);
+  if (c.provider === 'gitlab-pages') return isGitLabCom(c) ? gitlabPagesBaseURL(c.owner, c.repo) : '/';
+  return pagesBaseURL(c.owner, c.repo);
+}
+
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL
-export function hugoToml(c: BlogConfig, baseURL = c.provider === 'cloudflare-pages'
-  ? cloudflarePagesBaseURL(c.repo)
-  : pagesBaseURL(c.owner, c.repo)): string {
+export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c)): string {
   const repo = `${c.owner}/${c.repo}`;
+  const gitlab = c.provider === 'gitlab-pages';
+  // 管理画面は GitHub なら hugo-gh-admin（テーマが取り込む）、GitLab なら hugo-gl-admin（このサイトで取り込む）
+  const admin = gitlab
+    ? `# 管理画面（hugo-gl-admin）。記事もサイト設定もこのプロジェクトに保存する
+[params.blogit]
+  admin = "gitlab"
+
+[params.glAdmin]
+  lang = ${str(c.language)}
+  gitlabURL = ${str(gitlabUrl(c))}
+  repo = ${str(repo)}
+  branch = "main"
+  siteRepo = ${str(repo)}
+  siteBranch = "main"
+  siteConfigPath = "hugo.toml"`
+    : `# 管理画面（hugo-gh-admin）。記事もサイト設定もこのリポジトリに保存する
+[params.ghAdmin]
+  lang = ${str(c.language)}
+  repo = ${str(repo)}
+  branch = "main"
+  siteRepo = ${str(repo)}
+  siteBranch = "main"
+  siteConfigPath = "hugo.toml"`;
   return `title = ${str(c.title)}
 baseURL = ${str(baseURL)}
 languageCode = ${str(c.language)}
@@ -54,16 +128,12 @@ enableRobotsTXT = true
   author = ${str(c.author)}
   footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
 
-# 管理画面（hugo-gh-admin）。記事もサイト設定もこのリポジトリに保存する
-[params.ghAdmin]
-  lang = ${str(c.language)}
-  repo = ${str(repo)}
-  branch = "main"
-  siteRepo = ${str(repo)}
-  siteBranch = "main"
-  siteConfigPath = "hugo.toml"
+${admin}
 
-# テーマ（Blogit）。default / warm / cool から選べる
+${gitlab ? `[[module.imports]]
+  path = ${str(GL_ADMIN_MODULE)}
+
+` : ''}# テーマ（Blogit）。default / warm / cool から選べる
 [[module.imports]]
   path = ${str(`${THEME_MODULE}/${c.theme}`)}
 `;
@@ -71,7 +141,10 @@ enableRobotsTXT = true
 
 // 依存の版は初回ビルドで Hugo が解決する（その後は hugo mod get で固定する）
 export function goMod(c: BlogConfig): string {
-  return `module github.com/${c.owner}/${c.repo}
+  const host = c.provider === 'gitlab-pages'
+    ? new URL(normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM).host
+    : 'github.com';
+  return `module ${host}/${c.owner}/${c.repo}
 
 go 1.24.0
 `;
@@ -132,6 +205,28 @@ jobs:
 `;
 }
 
+// GitLab CI で Hugo をビルドし、GitLab Pages に公開する。hugomods/hugo の exts イメージは Go と Git を含むため Hugo Modules を取得できる
+export function gitlabCi(): string {
+  return `pages:
+  image: hugomods/hugo:exts-${HUGO_VERSION}
+  variables:
+    GIT_DEPTH: 1
+    HUGO_CACHEDIR: $CI_PROJECT_DIR/.hugo_cache
+  cache:
+    key: hugo
+    paths:
+      - .hugo_cache
+  # 公開 URL は GitLab が決定する（一意のドメイン・独自ドメイン・セルフホストに対応する）
+  script:
+    - hugo --minify --gc --baseURL "\${CI_PAGES_URL}/"
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+`;
+}
+
 function firstPost(c: BlogConfig, now: Date): { path: string; content: string } {
   const date = now.toISOString().slice(0, 10);
   const ja = c.language === 'ja';
@@ -160,24 +255,26 @@ ${c.description}
 
 [Blogit](https://github.com/kmmz532/blogit) で作成した Hugo ブログです。
 
-- 公開 URL: ${baseURL}
+${baseURL === '/'
+    ? `- 記事の編集: 公開 URL の \`/admin/\`
+`
+    : `- 公開 URL: ${baseURL}
 - 記事の編集: ${baseURL}admin/
-`;
+`}`;
 }
 
 // 単一リポジトリ型のサイト一式
-export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = c.provider === 'cloudflare-pages'
-  ? cloudflarePagesBaseURL(c.repo)
-  : pagesBaseURL(c.owner, c.repo) } = {}): FileMap {
+export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBaseURL(c) } = {}): FileMap {
   const post = firstPost(c, now);
   const files: FileMap = {
     'hugo.toml': hugoToml(c, baseURL),
     'go.mod': goMod(c),
-    '.gitignore': 'public/\nresources/\n.hugo_build.lock\n',
+    '.gitignore': 'public/\nresources/\n.hugo_build.lock\n.hugo_cache/\n',
     'README.md': readme(c, baseURL),
     'static/images/.gitkeep': '',
     [post.path]: post.content,
   };
-  if (c.provider !== 'cloudflare-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
+  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow();
+  if (c.provider === 'gitlab-pages') Object.assign(files, gitlabAdminPages(c), { '.gitlab-ci.yml': gitlabCi() });
   return files;
 }

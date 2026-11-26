@@ -1,3 +1,4 @@
+{{- $adminNS := partial "admin-ns.html" . -}}
 <header class="header">
   <div class="header-inner">
     <a class="title" href="{{ "" | relURL }}">{{ site.Params.headerTitle | default site.Title }}</a>
@@ -6,12 +7,12 @@
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
       </a>
       {{- if and (eq .Kind "page") (eq .Section "posts") }}
-      {{ partial "gh-admin/button.html" (dict "kind" "edit" "page" . "class" "icon-button") }}
+      {{ partial (printf "%s/button.html" $adminNS) (dict "kind" "edit" "page" . "class" "icon-button") }}
       {{- end }}
-      {{ partial "gh-admin/button.html" (dict "kind" "new" "page" . "class" "icon-button") }}
-      {{ partial "gh-admin/button.html" (dict "kind" "admin" "page" . "class" "icon-button") }}
-      {{ partial "gh-admin/button.html" (dict "kind" "login" "page" . "class" "icon-button") }}
-      {{ partial "gh-admin/button.html" (dict "kind" "logout" "page" . "class" "icon-button") }}
+      {{ partial (printf "%s/button.html" $adminNS) (dict "kind" "new" "page" . "class" "icon-button") }}
+      {{ partial (printf "%s/button.html" $adminNS) (dict "kind" "admin" "page" . "class" "icon-button") }}
+      {{ partial (printf "%s/button.html" $adminNS) (dict "kind" "login" "page" . "class" "icon-button") }}
+      {{ partial (printf "%s/button.html" $adminNS) (dict "kind" "logout" "page" . "class" "icon-button") }}
     </div>
   </div>
 </header>
