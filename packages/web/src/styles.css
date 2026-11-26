@@ -498,10 +498,17 @@ fieldset {
   text-align: center;
 }
 
-/* 表示言語の切り替え（アイコンと切り替え先の言語名） */
-.lang-button {
-  width: auto;
-  gap: 0.35rem;
-  padding: 0 0.6rem;
-  font-size: 0.85rem;
+/* フッターの表示言語の切り替え。リンクと同じ見た目にする */
+.link-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
 }

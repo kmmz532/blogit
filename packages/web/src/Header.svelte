@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Owner } from '@blogit/core';
-  import { i18n, setLocale, t } from './lib/i18n.svelte';
+  import { t } from './lib/i18n.svelte';
 
   // user と onSignOut はアプリの画面だけで渡す（静的ページではロゴとテーマの切り替えのみ）
   let { user, onSignOut }: { user?: Owner; onSignOut?: () => void } = $props();
@@ -17,9 +17,6 @@
   <div class="header-inner">
     <a class="logo" href="./">Blogit</a>
     <div class="header-actions">
-      <button class="icon-button lang-button" type="button" onclick={() => setLocale(i18n.locale === 'ja' ? 'en' : 'ja')} aria-label={t('switchLanguageLabel')} title={t('switchLanguageLabel')}>
-        {t('switchLanguage')}
-      </button>
       {#if user && onSignOut}
         <img class="avatar" src={user.avatarUrl} alt={user.login} title={user.login} />
         <button class="icon-button" type="button" onclick={onSignOut} aria-label={t('logout')} title={t('logout')}>
