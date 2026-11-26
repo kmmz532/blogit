@@ -4,20 +4,65 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <title>Blogit</title>
+<style>
+  body { margin: 0; padding: 32px 16px; font: 16px/1.7 system-ui, sans-serif; color: #1a1a1a; background: #fff; }
+  @media (prefers-color-scheme: dark) { body { color: #ededed; background: #1a1a1a; } }
+  main { max-width: 32rem; margin: 0 auto; }
+  .host { font-weight: 700; word-break: break-all; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  button { font: inherit; padding: 8px 16px; border-radius: 999px; border: 1px solid #888; background: transparent; color: inherit; cursor: pointer; }
+  button.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { button.primary { background: #ededed; color: #1a1a1a; border-color: #ededed; } }
+</style>
 </head>
 <body>
+<main>
 <p id="message">ログインしています…</p>
+<div id="confirm" hidden>
+  <p>次のサイトに、GitHubのログイン情報を渡します。自分のブログであることを確認してください。<br>The GitHub login will be passed to the following site. Make sure it is your blog.</p>
+  <p class="host" id="host"></p>
+  <div class="actions">
+    <button type="button" class="primary" id="continue">ログインする / Log in</button>
+    <button type="button" id="cancel">やめる / Cancel</button>
+  </div>
+</div>
+</main>
 <script>
   // hugo-gh-admin の「GitHub でログイン」の中継ページ。GitHub の OAuth App のコールバック URL はこのサイトにあるため、
-  // GitHub から受け取ったコードを、state に入っている戻り先（ブログのログイン画面）へ渡す
+  // GitHub から受け取ったコードを、state に入っている戻り先（ブログのログイン画面）へ渡す。
+  // 戻り先は誰でも指定できるので、初めての戻り先には渡す前に確認する（他人のサイトにコードを渡さないため）。
+  // 確認した origin はこの端末に覚え、次からは確認しない
   (function () {
+    var TRUSTED_KEY = 'blogit_oauth_trusted';
     var params = new URLSearchParams(location.search);
     var message = document.getElementById('message');
+
+    function readTrusted() {
+      try {
+        var list = JSON.parse(localStorage.getItem(TRUSTED_KEY) || '[]');
+        return Array.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function trust(origin) {
+      var list = readTrusted().filter(function (item) { return item !== origin; });
+      list.push(origin);
+      try {
+        localStorage.setItem(TRUSTED_KEY, JSON.stringify(list.slice(-50)));
+      } catch (e) {
+        // 覚えられなくても、次回また確認するだけ
+      }
+    }
+
+    var back;
     try {
       var raw = (params.get('state') || '').replace(/-/g, '+').replace(/_/g, '/');
       var state = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(raw), function (c) { return c.charCodeAt(0); })));
-      var back = new URL(state.r);
+      back = new URL(state.r);
       var local = back.hostname === 'localhost' || back.hostname === '127.0.0.1';
       if (back.protocol !== 'https:' && !(back.protocol === 'http:' && local)) throw new Error('invalid return URL');
       back.search = '';
@@ -26,10 +71,32 @@
         if (params.get(key)) back.searchParams.set(key, params.get(key));
       });
       back.searchParams.set('state', String(state.s));
-      location.replace(back.href);
     } catch (e) {
       message.textContent = 'ログインの戻り先が正しくありません。ブログのログイン画面からやり直してください。';
+      return;
     }
+
+    function go() {
+      location.replace(back.href);
+    }
+
+    // コードが無い（エラーで戻ってきた）なら、渡すものが無いので確認しない
+    if (!params.get('code') || readTrusted().indexOf(back.origin) !== -1) {
+      go();
+      return;
+    }
+    message.hidden = true;
+    document.getElementById('host').textContent = back.origin + back.pathname;
+    document.getElementById('confirm').hidden = false;
+    document.getElementById('continue').addEventListener('click', function () {
+      trust(back.origin);
+      go();
+    });
+    document.getElementById('cancel').addEventListener('click', function () {
+      document.getElementById('confirm').hidden = true;
+      message.hidden = false;
+      message.textContent = 'ログインを中止しました。このページは閉じてかまいません。';
+    });
   })();
 </script>
 </body>
