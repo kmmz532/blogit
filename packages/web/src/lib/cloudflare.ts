@@ -1,10 +1,10 @@
 const CLIENT_ID = '9a85458daa8ab9012af72788828c7c21';
 const AUTH_URL = 'https://dash.cloudflare.com/oauth2/auth';
 const TOKEN_URL = 'https://dash.cloudflare.com/oauth2/token';
-const API_URL = 'https://api.cloudflare.com/client/v4';
 const TOKEN_KEY = 'blogit:cloudflare-token';
 const STATE_KEY = 'blogit:cloudflare-oauth-state';
 const VERIFIER_KEY = 'blogit:cloudflare-code-verifier';
+const WORKER_URL = (import.meta.env.VITE_AUTH_WORKER_URL as string | undefined)?.replace(/\\/+$/, '');
 const SCOPES = ['account-settings.read', 'page.write'];
 
 function storage(): Storage | null {
@@ -18,7 +18,7 @@ function storage(): Storage | null {
 function base64Url(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');
 }
 
 async function sha256(value: string): Promise<ArrayBuffer> {
@@ -113,47 +113,33 @@ export class CloudflareClient {
   constructor(private readonly token: string) {}
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${API_URL}${path}`, {
-      ...init,
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        Accept: 'application/json',
-        ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
-        ...init.headers,
-      },
-    });
+    if (!WORKER_URL) throw new Error('Cloudflare API Worker URL is not configured (VITE_AUTH_WORKER_URL)');
+    let response: Response;
+    try {
+      response = await fetch(`${WORKER_URL}/cloudflare${path}`, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: 'application/json',
+          ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...init.headers,
+        },
+      });
+    } catch (error) {
+      throw new Error(`Cloudflare API Worker network/CORS error: ${error instanceof Error ? error.message : String(error)}`);
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success !== true) {
-      const message = data.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(', ');
-      throw new CloudflareApiError(response.status, message || `Cloudflare API error: ${response.status}`);
+      const message = data.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(', ')
+        || data.error
+        || `Cloudflare API error: ${response.status}`;
+      throw new CloudflareApiError(response.status, message);
     }
     return data.result as T;
   }
 
   async listAccounts(): Promise<CloudflareAccount[]> {
-    let result: { id: string; name: string }[];
-    try {
-      result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
-    } catch (error) {
-      if (error instanceof TypeError) {
-        try {
-          const probe = await fetch(`${API_URL}/accounts?per_page=1`, {
-            headers: { Accept: 'application/json' },
-          });
-          throw new Error(
-            `Cloudflare account list failed with Authorization (likely preflight) while a simple CORS request succeeded (HTTP ${probe.status}).`,
-          );
-        } catch (probeError) {
-          if (probeError instanceof TypeError) {
-            throw new Error(
-              'Cloudflare API CORS diagnostic: even a simple unauthenticated request is blocked. The API origin is not allowing this browser origin, or the request is being blocked by the network.',
-            );
-          }
-          throw probeError;
-        }
-      }
-      throw error;
-    }
+    const result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
     return (result ?? []).map((account: { id: string; name: string }) => ({
       id: account.id,
       name: account.name,
@@ -162,7 +148,7 @@ export class CloudflareClient {
 
   async getPagesProject(accountId: string, projectName: string): Promise<{ subdomain?: string } | null> {
     try {
-      return await this.request(`/accounts/${accountId}/pages/projects/${projectName}`);
+      return await this.request(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`);
     } catch (error) {
       if (error instanceof CloudflareApiError && error.status === 404) return null;
       throw error;
@@ -210,6 +196,6 @@ export class CloudflareClient {
   }
 
   async listDeployments(accountId: string, projectName: string): Promise<CloudflareDeployment[]> {
-    return this.request(`/accounts/${accountId}/pages/projects/${projectName}/deployments?per_page=10`);
+    return this.request(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments?per_page=10`);
   }
 }
