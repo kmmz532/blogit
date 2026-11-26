@@ -9,6 +9,38 @@ const ADMIN_MODULE = 'github.com/kmmz532/hugo-gh-admin';
 // Blogit 以外のテーマを使うか
 export const isExternalTheme = (c: BlogConfig) => Boolean(c.externalTheme);
 
+// themes.gohugo.io に載っているテーマの一覧（1 行に 1 つのモジュールのパス）
+export const HUGO_THEMES_LIST_URL = 'https://raw.githubusercontent.com/gohugoio/hugoThemesSiteBuilder/main/themes.txt';
+
+export function parseHugoThemesList(text: string): string[] {
+  return text.split('\n').map((line) => line.trim()).filter((line) => line && !line.startsWith('#') && validateThemeModule(line));
+}
+
+// テーマの入力（モジュールのパスか、リポジトリの URL）をモジュールのパスにする。受け付けない形なら null。
+// 例: https://github.com/owner/theme.git・https://github.com/owner/theme/tree/main → github.com/owner/theme
+// themes には themes.gohugo.io の一覧を渡す。渡すと、テーマのページの URL（https://themes.gohugo.io/themes/<名前>/）も受け付ける
+export function normalizeThemeModule(input: string, themes: string[] = []): string | null {
+  const page = /^(?:https?:\/\/)?themes\.gohugo\.io\/themes\/([^/?#]+)/i.exec(input.trim());
+  if (page) {
+    const name = page[1].toLowerCase();
+    // 名前はパスの最後の要素。末尾のメジャーバージョン（/v2 など）は除く
+    const nameOf = (theme: string) => theme.replace(/\/v\d+$/, '').split('/').pop()!.toLowerCase();
+    return themes.find((theme) => nameOf(theme) === name) ?? null;
+  }
+  let path = input.trim()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/[?#].*$/, '')
+    .replace(/\/+$/, '')
+    .replace(/\.git$/i, '');
+  const [host = '', ...rest] = path.split('/');
+  path = [host.toLowerCase(), ...rest].join('/');
+  // GitHub はリポジトリまで（/tree/main などのページの URL を除く）。GitLab は /-/ 以降がページの URL
+  if (host.toLowerCase() === 'github.com') path = path.split('/').slice(0, 3).join('/');
+  path = path.replace(/\/-\/.*$/, '');
+  return validateThemeModule(path) ? path : null;
+}
+
 // Hugo Modules のパスとして受け付ける形か（ホスト名/パス。スキームやバージョンは不可）
 export function validateThemeModule(path: string): boolean {
   return path.length <= 200

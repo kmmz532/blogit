@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeGitLabUrl } from './gitlab.ts';
-import { validateLinkUrl, validateThemeModule, cloudflareBuildCommand, FLOAT_SCRIPT, gitlabPagesBaseURL, goMod, hugoToml, pseudoVersion, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
+import { validateLinkUrl, validateThemeModule, normalizeThemeModule, parseHugoThemesList, cloudflareBuildCommand, FLOAT_SCRIPT, gitlabPagesBaseURL, goMod, hugoToml, pseudoVersion, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
@@ -191,6 +191,22 @@ test('hugoToml: writes how to rebuild for each provider', () => {
   assert.doesNotMatch(cloudflare, /buildWorkflow/);
   assert.match(cloudflare, /buildCommit = true/);
   assert.doesNotMatch(hugoToml({ ...config, provider: 'cloudflare-pages', gitlabUrl: 'https://gitlab.com' }), /buildCommit|buildWorkflow/);
+});
+
+test('normalizeThemeModule: accepts module paths and repository URLs', () => {
+  assert.equal(normalizeThemeModule('github.com/owner/hugo-theme'), 'github.com/owner/hugo-theme');
+  assert.equal(normalizeThemeModule(' https://github.com/owner/hugo-theme '), 'github.com/owner/hugo-theme');
+  assert.equal(normalizeThemeModule('https://www.github.com/owner/hugo-theme.git'), 'github.com/owner/hugo-theme');
+  assert.equal(normalizeThemeModule('https://github.com/owner/hugo-theme/tree/main/exampleSite'), 'github.com/owner/hugo-theme');
+  assert.equal(normalizeThemeModule('https://GitHub.com/Owner/Theme/'), 'github.com/Owner/Theme');
+  assert.equal(normalizeThemeModule('https://gitlab.com/group/sub/theme/-/tree/main'), 'gitlab.com/group/sub/theme');
+  assert.equal(normalizeThemeModule('https://themes.gohugo.io/'), null);
+  const list = parseHugoThemesList('# comment\ngithub.com/adityatelange/hugo-PaperMod\n\ncodeberg.org/owner/theme\ngithub.com/nunocoracao/blowfish/v2\n');
+  assert.deepEqual(list, ['github.com/adityatelange/hugo-PaperMod', 'codeberg.org/owner/theme', 'github.com/nunocoracao/blowfish/v2']);
+  assert.equal(normalizeThemeModule('https://themes.gohugo.io/themes/blowfish/', list), 'github.com/nunocoracao/blowfish/v2');
+  assert.equal(normalizeThemeModule('https://themes.gohugo.io/themes/hugo-papermod/', list), 'github.com/adityatelange/hugo-PaperMod');
+  assert.equal(normalizeThemeModule('https://themes.gohugo.io/themes/unknown/', list), null);
+  assert.equal(normalizeThemeModule(''), null);
 });
 
 test('validateThemeModule', () => {

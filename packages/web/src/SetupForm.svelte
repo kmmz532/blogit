@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, validateThemeModule, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName, type UploadedImage } from '@blogit/core';
+  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, normalizeThemeModule, parseHugoThemesList, HUGO_THEMES_LIST_URL, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName, type UploadedImage } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
   import { adminLoginSettings } from './lib/auth';
   import { loadDraft, saveDraft } from './lib/draft';
@@ -48,7 +48,20 @@
   // Blogit 以外のテーマ（Hugo Modules のパス）を使うか
   let useExternalTheme = $state(pick('useExternalTheme', false));
   let themeModule = $state(pick('themeModule', ''));
-  const themeModuleValid = $derived(validateThemeModule(themeModule.trim()));
+  // URL を入力した場合もモジュールのパスに直す
+  // themes.gohugo.io の一覧。「その他」を選んだときに 1 回だけ読み、候補と、テーマのページの URL の変換に使う。読めなくても入力はできる
+  let hugoThemes = $state<string[]>([]);
+  let hugoThemesLoaded = false;
+  $effect(() => {
+    if (!useExternalTheme || hugoThemesLoaded) return;
+    hugoThemesLoaded = true;
+    fetch(HUGO_THEMES_LIST_URL)
+      .then((res) => (res.ok ? res.text() : ''))
+      .then((text) => { hugoThemes = parseHugoThemesList(text); })
+      .catch(() => {});
+  });
+  const themeModulePath = $derived(normalizeThemeModule(themeModule, hugoThemes));
+  const themeModuleValid = $derived(themeModulePath !== null);
   let language = $state<'ja' | 'en'>(draft.language === 'en' || draft.language === 'ja' ? draft.language : i18n.locale);
   let isPrivate = $state(pick('isPrivate', false));
   let customDomain = $state(pick('customDomain', ''));
@@ -168,7 +181,7 @@
         ...(isGitLab ? { gitlabUrl } : {}),
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
-        ...(useExternalTheme ? { externalTheme: themeModule.trim() } : {}),
+        ...(useExternalTheme && themeModulePath ? { externalTheme: themeModulePath } : {}),
         ...(themeAutoUpdate || useExternalTheme ? {} : { themeVersion: await fetchThemeVersion() }),
         ...(!isGitLab && adminLogin && useBlogitLogin ? { adminLogin } : {}),
         // サイドバー・プロフィール・既定のサムネイルは Blogit のテーマだけの設定
@@ -301,8 +314,12 @@
       {#if useExternalTheme}
       <div class="field">
         <label for="theme-module">{t('themeModule')}</label>
-        <input id="theme-module" type="text" bind:value={themeModule} placeholder="github.com/owner/hugo-theme" autocomplete="off" spellcheck="false" />
-        {#if themeModule.trim() && !themeModuleValid}<p class="error-text">{t('themeModuleInvalid')}</p>{/if}
+        <input id="theme-module" type="text" list="hugo-themes" bind:value={themeModule} placeholder="https://github.com/owner/hugo-theme" autocomplete="off" spellcheck="false" />
+        <datalist id="hugo-themes">
+          {#each hugoThemes as path (path)}<option value={path}></option>{/each}
+        </datalist>
+        {#if themeModule.trim() && !themeModuleValid}<p class="error-text">{t('themeModuleInvalid')}</p>
+        {:else if themeModulePath && themeModulePath !== themeModule.trim()}<p class="hint">{t('themeModuleResolved', { path: themeModulePath })}</p>{/if}
         <p class="hint">{t('themeModuleHint')}</p>
       </div>
       <p class="hint">{t('externalNoPreview')}</p>

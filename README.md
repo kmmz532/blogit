@@ -20,7 +20,7 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 - Cloudflare Pagesを利用する場合は、CloudflareのダッシュボードでGitHubまたはGitLabとの連携を済ませておく。
 - 高度な設定では、説明・著者・サイドバーのリンク・ファビコン・記事カードの既定のサムネイルなども設定できる。作成後に管理画面のサイト設定から変更できる。
 - テーマは `default`・`warm`・`cool` から選択する。既定ではビルドのたびに最新のテーマを利用し、高度な設定で作成時のバージョンに固定することもできる。
-- Blogit以外のHugoのテーマも、「その他」でHugo Modulesのパス（例: `github.com/owner/hugo-theme`）を入力して利用できる。この場合は管理画面（hugo-gh-admin）を別に取り込み、ビルド後に `scripts/gh-admin-float.sh` が管理ボタンを各ページへ差し込む。ボタンはログイン中だけ画面の左下に表示し、`params.ghAdmin.float = false` で表示しない。テーマが必要とする設定は、作成後に `hugo.toml` へ追加する。
+- Blogit以外のHugoのテーマも、「その他」でテーマのリポジトリのURL、Hugo Modulesのパス（例: `github.com/owner/hugo-theme`）、themes.gohugo.ioのテーマのページのURLのいずれかを入力して利用できる。この場合は管理画面（hugo-gh-admin）を別に取り込み、ビルド後に `scripts/gh-admin-float.sh` が管理ボタンを各ページへ差し込む。ボタンはログイン中だけ画面の左下に表示し、`params.ghAdmin.float = false` で表示しない。テーマが必要とする設定は、作成後に `hugo.toml` へ追加する。
 - GitHubのリポジトリでは、管理画面に「GitHubでログイン」を設定する（BlogitのOAuth Appと `workers/auth` を共用する）。高度な設定でオフにすると、管理画面にはトークンを入力してログインする。
 - テーマ（`themes/base`）は、Blogitで作成したブログ以外のHugoサイトからも取り込める。見た目は、サイト側の `layouts/` と `assets/` で上書きする（[themes/base/README.md](themes/base/README.md)）。
 - 構築の途中で失敗した場合や、ビルドが時間内に完了しなかった場合は、完了していない手順から再実行できる。障害の可能性があるときは、GitHub・GitLab・Cloudflareのステータスページへのリンクを表示する。
