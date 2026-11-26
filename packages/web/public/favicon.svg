@@ -1,10 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720">
-  <rect width="720" height="720" rx="120" fill="#fff"/>
-  <g fill="none" stroke="#000" stroke-width="50" stroke-linecap="round" stroke-linejoin="round">
-    <!-- B -->
-    <path d="M245 130 C320 95 440 90 500 125 C560 160 545 205 470 225 L340 265"/>
-    <path d="M272 135 C262 210 255 290 265 360 C290 405 340 420 390 415 C470 405 560 385 545 320 C530 265 440 250 340 265"/>
-    <!-- G -->
-    <path d="M415 335 C330 310 230 290 175 340 C125 390 120 470 140 540 C165 615 270 640 360 630 C450 620 500 580 480 530 C460 490 380 470 305 495 L305 545"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#111"/>
+  <!-- B の下の線がそのまま G の上の線になる一筆のモノグラム -->
+  <path fill="none" stroke="#fff" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" transform="translate(17 0)"
+    d="M250 276 V80 H316 A48 48 0 0 1 316 176 H250 M250 176 H326 A50 50 0 0 1 326 276 H162 A62 62 0 0 0 100 338 V370 A62 62 0 0 0 162 432 H266 A62 62 0 0 0 328 370 V358 H262"/>
 </svg>
