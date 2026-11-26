@@ -161,6 +161,8 @@ export class CloudflareClient {
   async createPagesProject(accountId: string, repo: {
     // source は Cloudflare の Git 連携の種類。gitlab は gitlab.com のみ（セルフホストは非対応）
     source: 'github' | 'gitlab'; owner: string; ownerId: number; repoId: number; repoName: string; branch: string;
+    // ビルドコマンド（@blogit/core の cloudflareBuildCommand）
+    buildCommand: string;
   }): Promise<{ subdomain?: string }> {
     return this.request(`/accounts/${accountId}/pages/projects`, {
       method: 'POST',
@@ -168,7 +170,7 @@ export class CloudflareClient {
         name: repo.repoName.toLowerCase(),
         production_branch: repo.branch,
         build_config: {
-          build_command: 'hugo --minify --gc',
+          build_command: repo.buildCommand,
           destination_dir: 'public',
           root_dir: '/',
         },

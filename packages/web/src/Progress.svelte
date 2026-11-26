@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from './lib/i18n.svelte';
   import { clearDraft } from './lib/draft';
-  import { checkServiceStatus, DeployPendingError, GitHubClient, GitLabClient, isGitLabRepo, type ServiceStatus, type StatusService, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { checkServiceStatus, DeployPendingError, GitHubClient, GitLabClient, isGitLabRepo, type ServiceStatus, type StatusService, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, cloudflareBuildCommand, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
   import { saveToken } from './lib/auth';
@@ -107,7 +107,7 @@
         if (!project) {
           project = await cf.createPagesProject(config.cloudflareAccountId, {
             source: onGitLab ? 'gitlab' : 'github', owner: config.owner, ownerId: details.ownerId, repoId: details.id,
-            repoName: projectName, branch: details.defaultBranch,
+            repoName: projectName, branch: details.defaultBranch, buildCommand: cloudflareBuildCommand(config),
           });
         }
         const url = project.subdomain ? `https://${project.subdomain}/` : `https://${projectName}.pages.dev/`;

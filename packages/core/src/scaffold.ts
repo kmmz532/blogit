@@ -4,6 +4,43 @@ import type { BlogConfig, FileMap } from './types.ts';
 
 export const HUGO_VERSION = '0.141.0';
 const THEME_MODULE = 'github.com/kmmz532/blogit/themes';
+const ADMIN_MODULE = 'github.com/kmmz532/hugo-gh-admin';
+
+// Blogit 以外のテーマを使うか
+export const isExternalTheme = (c: BlogConfig) => Boolean(c.externalTheme);
+
+// Hugo Modules のパスとして受け付ける形か（ホスト名/パス。スキームやバージョンは不可）
+export function validateThemeModule(path: string): boolean {
+  return path.length <= 200
+    && /^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[A-Za-z0-9._~-]+)+$/.test(path)
+    && !path.startsWith(`${THEME_MODULE}/`);
+}
+
+// 外部テーマのとき、ビルド後の HTML に管理ボタン（hugo-gh-admin の浮かせる部品）を差し込むスクリプト
+export const FLOAT_SCRIPT = 'scripts/gh-admin-float.sh';
+
+export function floatScript(): string {
+  return `#!/bin/sh
+# ビルド後の HTML に、管理画面の浮かせるボタン（hugo-gh-admin の gh-admin/js/float.js）を読み込む 1 行を差し込む。
+# 引数は公開 URL（例: https://example.org/blog/）。そのパスをスクリプトの URL の前に付ける。
+# 管理画面の部品を組み込んだページ（<meta name="gh-admin"> がある）には差し込まない。
+# ボタンを出さない場合は、hugo.toml の params.ghAdmin.float を false にする
+set -eu
+base=$(printf '%s' "\${1:-}" | sed -E 's#^[a-z]+://[^/]+##; s#/+$##')
+tag="<script type=\"module\" src=\"$base/gh-admin/js/float.js\"></script>"
+find public -name '*.html' | while IFS= read -r file; do
+  # minify で属性の引用符が省かれる（name=gh-admin）ことがある
+  grep -Eq '<meta[^>]+name="?gh-admin' "$file" && continue
+  grep -q '</head>' "$file" || continue
+  sed -i "s#</head>#$tag</head>#" "$file"
+done
+`;
+}
+
+// Cloudflare Pages のビルドコマンド。外部テーマのときは管理ボタンを差し込む（公開先はドメイン直下）
+export function cloudflareBuildCommand(c: BlogConfig): string {
+  return isExternalTheme(c) ? `hugo --minify --gc && sh ${FLOAT_SCRIPT}` : 'hugo --minify --gc';
+}
 
 // <owner>.github.io という名前のリポジトリはドメイン直下、それ以外は /<repo>/ に公開される。
 // userSiteOrigin は <owner>.github.io に設定された独自ドメインのオリジン（例: https://example.jp）。設定時は /<repo>/ もそのドメイン配下になる
@@ -104,6 +141,72 @@ function buildSettings(c: BlogConfig): string {
 }
 
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c), branch = 'main'): string {
+  if (isExternalTheme(c)) return externalHugoToml(c, baseURL, branch);
+  return `${siteHeader(c, baseURL)}
+# 検索は /index.json を読む。outputs はテーマから引き継がれないのでここに書く
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
+
+[markup.highlight]
+  noClasses = false
+
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 3
+
+[params]
+  description = ${str(c.description)}
+  author = ${str(c.author)}
+  footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
+${c.favicon ? `  icon = ${str(`/favicon.${c.favicon.ext}`)}\n` : ''}${c.favicon?.ext === 'png' ? '  appleIcon = "/favicon.png"\n' : ''}  defaultThumbnail = ${str(c.defaultThumbnail ? `/default-thumbnail.${c.defaultThumbnail.ext}` : DEFAULT_THUMBNAIL)}\n${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
+${adminSettings(c, branch)}
+
+# テーマ（Blogit）。default / warm / cool から選べる
+[[module.imports]]
+  path = ${str(`${THEME_MODULE}/${c.theme}`)}
+`;
+}
+
+// 外部テーマのサイト。Blogit のテーマ専用の設定（サイドバー・既定のサムネイルなど）は書かない
+function externalHugoToml(c: BlogConfig, baseURL: string, branch: string): string {
+  return `${siteHeader(c, baseURL)}
+[params]
+  description = ${str(c.description)}
+  author = ${str(c.author)}
+
+${adminSettings(c, branch)}
+
+# テーマ（Blogit 以外）。設定はテーマの説明に従って追加する
+[[module.imports]]
+  path = ${str(c.externalTheme!)}
+
+# 管理画面。管理ボタンはビルド後に ${FLOAT_SCRIPT} が差し込む
+[[module.imports]]
+  path = ${str(ADMIN_MODULE)}
+`;
+}
+
+// テーマによらない設定
+function siteHeader(c: BlogConfig, baseURL: string): string {
+  return `title = ${str(c.title)}
+baseURL = ${str(baseURL)}
+languageCode = ${str(c.language)}
+# 未設定だと en 扱いになり、画面の文言が英語になる
+defaultContentLanguage = ${str(c.language)}
+timeZone = ${str(c.language === 'ja' ? 'Asia/Tokyo' : 'UTC')}
+timeout = "5m"
+enableRobotsTXT = true
+
+[pagination]
+  pagerSize = ${c.pagerSize ?? 10}
+
+[taxonomies]
+  tag = "tags"
+  category = "categories"
+`;
+}
+
+function adminSettings(c: BlogConfig, branch: string): string {
   const repo = `${c.owner}/${c.repo}`;
   const gitlab = isGitLabRepo(c);
   // 管理画面は hugo-gh-admin（テーマが取り込む）。GitLab のサイトでは provider = "gitlab" にする
@@ -123,44 +226,7 @@ ${buildSettings(c)}` : ''}${c.adminLogin && !gitlab ? `
   oauthClientID = ${str(c.adminLogin.clientId)}
   oauthTokenURL = ${str(c.adminLogin.tokenUrl)}
   oauthRelayURL = ${str(c.adminLogin.relayUrl)}` : ''}`;
-  return `title = ${str(c.title)}
-baseURL = ${str(baseURL)}
-languageCode = ${str(c.language)}
-# 未設定だと en 扱いになり、画面の文言が英語になる
-defaultContentLanguage = ${str(c.language)}
-timeZone = ${str(c.language === 'ja' ? 'Asia/Tokyo' : 'UTC')}
-timeout = "5m"
-enableRobotsTXT = true
-
-[pagination]
-  pagerSize = ${c.pagerSize ?? 10}
-
-[taxonomies]
-  tag = "tags"
-  category = "categories"
-
-# 検索は /index.json を読む。outputs はテーマから引き継がれないのでここに書く
-[outputs]
-  home = ["HTML", "RSS", "JSON"]
-
-[markup.highlight]
-  noClasses = false
-
-[markup.tableOfContents]
-  startLevel = 2
-  endLevel = 3
-
-[params]
-  description = ${str(c.description)}
-  author = ${str(c.author)}
-  footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
-${c.favicon ? `  icon = ${str(`/favicon.${c.favicon.ext}`)}\n` : ''}${c.favicon?.ext === 'png' ? '  appleIcon = "/favicon.png"\n' : ''}  defaultThumbnail = ${str(c.defaultThumbnail ? `/default-thumbnail.${c.defaultThumbnail.ext}` : DEFAULT_THUMBNAIL)}\n${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
-${admin}
-
-# テーマ（Blogit）。default / warm / cool から選べる
-[[module.imports]]
-  path = ${str(`${THEME_MODULE}/${c.theme}`)}
-`;
+  return admin;
 }
 
 // コミットの SHA と日時から Go modules の疑似バージョンを作る（例: v0.0.0-20261126012345-0123456789ab）
@@ -184,7 +250,7 @@ export function goMod(c: BlogConfig): string {
   const host = isGitLabRepo(c)
     ? new URL(normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM).host
     : 'github.com';
-  const require = c.themeVersion
+  const require = c.themeVersion && !isExternalTheme(c)
     ? `
 require (
 	${THEME_MODULE}/base ${c.themeVersion}
@@ -198,7 +264,8 @@ go 1.24.0
 ${require}`;
 }
 
-export function deployWorkflow(branch = 'main'): string {
+// external が true なら、ビルド後に管理ボタンを差し込む（外部テーマ）
+export function deployWorkflow(branch = 'main', external = false): string {
   return `name: deploy
 
 on:
@@ -237,7 +304,9 @@ jobs:
         uses: actions/configure-pages@v5
       - run: hugo --minify --gc --baseURL "\${{ steps.pages.outputs.base_url }}/"
         env:
-          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache
+          HUGO_CACHEDIR: \${{ runner.temp }}/hugo_cache${external ? `
+      # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む
+      - run: sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"` : ''}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -257,7 +326,7 @@ jobs:
 }
 
 // GitLab CI で Hugo をビルドし、GitLab Pages に公開する。hugomods/hugo の exts イメージは Go と Git を含むため Hugo Modules を取得できる
-export function gitlabCi(): string {
+export function gitlabCi(external = false): string {
   return `pages:
   image: hugomods/hugo:exts-${HUGO_VERSION}
   variables:
@@ -269,7 +338,9 @@ export function gitlabCi(): string {
       - .hugo_cache
   # 公開 URL は GitLab が決定する（一意のドメイン・独自ドメイン・セルフホストに対応する）
   script:
-    - hugo --minify --gc --baseURL "\${CI_PAGES_URL}/"
+    - hugo --minify --gc --baseURL "\${CI_PAGES_URL}/"${external ? `
+    # 管理ボタン（hugo-gh-admin の浮かせる部品）を差し込む
+    - sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"` : ''}
   artifacts:
     paths:
       - public
@@ -291,9 +362,13 @@ tags: ["blogit"]
 ---
 
 ${
-  ja
-    ? 'Blogit でブログを作りました。右上の鉛筆アイコンからログインすると、ブラウザで記事を書けます。'
-    : 'This blog was created with Blogit. Log in from the pencil icon at the top right to write posts in your browser.'
+  isExternalTheme(c)
+    ? ja
+      ? 'Blogit でブログを作りました。公開 URL の /login/ からログインすると、画面の左下に表示されるボタンから記事を書けます。'
+      : 'This blog was created with Blogit. Log in at /login/ on the site, then write posts from the button at the bottom left.'
+    : ja
+      ? 'Blogit でブログを作りました。右上の鉛筆アイコンからログインすると、ブラウザで記事を書けます。'
+      : 'This blog was created with Blogit. Log in from the pencil icon at the top right to write posts in your browser.'
 }
 `,
   };
@@ -326,8 +401,11 @@ export function siteFiles(c: BlogConfig, { now = new Date(), baseURL = defaultBa
     [post.path]: post.content,
   };
   if (c.favicon) files[`static/favicon.${c.favicon.ext}`] = { base64: c.favicon.base64 };
-  if (c.defaultThumbnail) files[`static/default-thumbnail.${c.defaultThumbnail.ext}`] = { base64: c.defaultThumbnail.base64 };
-  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch);
-  if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi();
+  const external = isExternalTheme(c);
+  // 既定のサムネイルは Blogit のテーマだけが使う
+  if (c.defaultThumbnail && !external) files[`static/default-thumbnail.${c.defaultThumbnail.ext}`] = { base64: c.defaultThumbnail.base64 };
+  if (external) files[FLOAT_SCRIPT] = floatScript();
+  if (c.provider === 'github-pages') files['.github/workflows/deploy.yml'] = deployWorkflow(branch, external);
+  if (c.provider === 'gitlab-pages') files['.gitlab-ci.yml'] = gitlabCi(external);
   return files;
 }

@@ -1,0 +1,32 @@
+{{- /* 管理画面（hugo-gh-admin）の土台を、このテーマの見た目で上書きする。中身は _default/baseof.html と同じにする */ -}}
+<!doctype html>
+<html lang="{{ site.Language.LanguageCode }}">
+<head>
+  {{ partial "head.html" . }}
+  {{- /* 反映待ちの控えを消す基準。このページを作ったビルドの時刻 */}}
+  <meta name="build-time" content="{{ now.Unix }}">
+</head>
+<body>
+  <a class="skip-link" href="#main">{{ T "skip_to_content" }}</a>
+  {{ partial "header.html" . }}
+  <div class="layout">
+    <main class="contents" id="main">
+      {{ partial "breadcrumb.html" . }}
+      {{ block "main" . }}{{ end }}
+    </main>
+    {{- /* サイドバーは params.sidebar = false でサイト全体、front matter の sidebar: false でページ単位で消せる */}}
+    {{- if not (or (eq .Kind "404") (eq (.Params.sidebar | default true) false) (eq (site.Params.sidebar | default true) false)) }}
+    {{ partial "sidebar.html" . }}
+    {{- end }}
+  </div>
+  {{ partial "footer.html" . }}
+  <div class="options">
+    <button type="button" id="theme-toggle" aria-label="{{ T "toggle_dark" }}" title="{{ T "toggle_dark" }}">
+      <i class="fa-solid fa-moon icon" aria-hidden="true"></i>
+    </button>
+  </div>
+  <script src="{{ "js/theme.js" | relURL }}" type="module"></script>
+  {{ partial "pending-templates.html" . }}
+  {{ block "scripts" . }}{{ end }}
+</body>
+</html>

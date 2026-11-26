@@ -32,6 +32,9 @@ export interface BlogConfig {
   // true ならリポジトリを非公開で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;
+  // Blogit 以外のテーマ（Hugo Modules のパス。例: github.com/owner/hugo-theme）。指定時は theme・themeVersion を使わず、
+  // 管理画面（hugo-gh-admin）を別に取り込み、管理ボタンはビルド後に差し込む浮かせる部品で表示する
+  externalTheme?: string;
   // 管理画面（hugo-gh-admin）の「GitHub でログイン」に使う OAuth の設定。省略時はトークンを入力してログインする（GitHub のリポジトリのみ）
   adminLogin?: AdminLogin;
   // テーマのバージョンを固定するときの Go modules のバージョン（例: v0.0.0-20261126000000-0123456789ab）。省略時は最新バージョンを利用し、自動で更新される

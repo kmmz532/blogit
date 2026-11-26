@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName, type UploadedImage } from '@blogit/core';
+  import { fetchThemeVersion, pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, validateThemeModule, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName, type UploadedImage } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
   import { adminLoginSettings } from './lib/auth';
   import { loadDraft, saveDraft } from './lib/draft';
@@ -45,6 +45,10 @@
   let description = $state(pick('description', ''));
   let author = $state(pick('author', ''));
   let theme = $state<ThemeName>(themes.some((t) => t.name === draft.theme) ? (draft.theme as ThemeName) : 'default');
+  // Blogit 以外のテーマ（Hugo Modules のパス）を使うか
+  let useExternalTheme = $state(pick('useExternalTheme', false));
+  let themeModule = $state(pick('themeModule', ''));
+  const themeModuleValid = $derived(validateThemeModule(themeModule.trim()));
   let language = $state<'ja' | 'en'>(draft.language === 'en' || draft.language === 'ja' ? draft.language : i18n.locale);
   let isPrivate = $state(pick('isPrivate', false));
   let customDomain = $state(pick('customDomain', ''));
@@ -78,7 +82,7 @@
   }
   const adminLogin = adminLoginSettings();
   $effect(() => {
-    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate, useBlogitLogin });
+    saveDraft({ owner, repo, title, description, author, theme, useExternalTheme, themeModule, language, isPrivate, customDomain, bio, links, sidebar, pagerSize, themeAutoUpdate, useBlogitLogin });
   });
   // 同じ作成先に、途中まで作成したリポジトリがあるとき
   let resumable = $state(false);
@@ -120,7 +124,7 @@
     void owner; void repo;
     resumable = false;
   });
-  const canSubmit = $derived(repoValid && title.trim() && (!useCustomDomain || domainValid) && linksValid && pagerSizeValid && (selectedProvider !== 'cloudflare-pages'
+  const canSubmit = $derived(repoValid && title.trim() && (!useExternalTheme || themeModuleValid) && (!useCustomDomain || domainValid) && linksValid && pagerSizeValid && (selectedProvider !== 'cloudflare-pages'
     || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
 
   async function connect() {
@@ -164,13 +168,15 @@
         ...(isGitLab ? { gitlabUrl } : {}),
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
-        ...(themeAutoUpdate ? {} : { themeVersion: await fetchThemeVersion() }),
+        ...(useExternalTheme ? { externalTheme: themeModule.trim() } : {}),
+        ...(themeAutoUpdate || useExternalTheme ? {} : { themeVersion: await fetchThemeVersion() }),
         ...(!isGitLab && adminLogin && useBlogitLogin ? { adminLogin } : {}),
-        ...(bio.trim() ? { bio: bio.trim() } : {}),
-        ...(linkValues.length ? { links: linkValues } : {}),
-        ...(sidebar ? {} : { sidebar: false }),
+        // サイドバー・プロフィール・既定のサムネイルは Blogit のテーマだけの設定
+        ...(bio.trim() && !useExternalTheme ? { bio: bio.trim() } : {}),
+        ...(linkValues.length && !useExternalTheme ? { links: linkValues } : {}),
+        ...(sidebar || useExternalTheme ? {} : { sidebar: false }),
         ...(favicon ? { favicon } : {}),
-        ...(defaultThumbnail ? { defaultThumbnail } : {}),
+        ...(defaultThumbnail && !useExternalTheme ? { defaultThumbnail } : {}),
         ...(pagerSize !== 10 ? { pagerSize } : {}),
       });
     } catch (err) {
@@ -280,13 +286,27 @@
         <div class="choices">
           {#each themes as th (th.name)}
             <label class="choice">
-              <input type="radio" name="theme" value={th.name} bind:group={theme} />
+              <input type="radio" name="theme" value={th.name} checked={!useExternalTheme && theme === th.name} onchange={() => { theme = th.name; useExternalTheme = false; }} />
               <span class="choice-name">{th.label}</span>
               <span class="hint">{t(th.note)}</span>
             </label>
           {/each}
+          <label class="choice">
+            <input type="radio" name="theme" value="external" checked={useExternalTheme} onchange={() => (useExternalTheme = true)} />
+            <span class="choice-name">{t('themeExternal')}</span>
+            <span class="hint">{t('themeExternalNote')}</span>
+          </label>
         </div>
       </fieldset>
+      {#if useExternalTheme}
+      <div class="field">
+        <label for="theme-module">{t('themeModule')}</label>
+        <input id="theme-module" type="text" bind:value={themeModule} placeholder="github.com/owner/hugo-theme" autocomplete="off" spellcheck="false" />
+        {#if themeModule.trim() && !themeModuleValid}<p class="error-text">{t('themeModuleInvalid')}</p>{/if}
+        <p class="hint">{t('themeModuleHint')}</p>
+      </div>
+      <p class="hint">{t('externalNoPreview')}</p>
+      {:else}
       <div class="preview">
         <div class="tabs" role="tablist" aria-label={t('preview')}>
           {#each views as v (v.id)}
@@ -295,6 +315,7 @@
         </div>
         <img class="preview-image" src={shot(theme, view)} alt={t('previewAlt', { theme })} />
       </div>
+      {/if}
     </div>
   </details>
 
@@ -311,6 +332,7 @@
         <label for="author">{t('author')}</label>
         <input id="author" type="text" bind:value={author} placeholder={owner} />
       </div>
+      {#if !useExternalTheme}
       <div class="field">
         <label for="bio">{t('bio')}</label>
         <input id="bio" type="text" bind:value={bio} placeholder={t('bioPlaceholder')} />
@@ -337,21 +359,26 @@
           </button>
         </div>
       </fieldset>
+      {/if}
       <div class="field">
         <label for="favicon">{t('favicon')}</label>
         <input id="favicon" type="file" accept=".ico,.png,.svg,image/x-icon,image/png,image/svg+xml" onchange={(e) => readImage(e, ['ico', 'png', 'svg'], 1, (image) => (favicon = image))} />
         <p class="hint">{t('faviconHint')}</p>
       </div>
+      {#if !useExternalTheme}
       <div class="field">
         <label for="default-thumbnail">{t('defaultThumbnail')}</label>
         <input id="default-thumbnail" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.svg,image/png,image/jpeg,image/webp,image/gif,image/svg+xml" onchange={(e) => readImage(e, ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'], 5, (image) => (defaultThumbnail = image))} />
         <p class="hint">{t('defaultThumbnailHint')}</p>
       </div>
+      {/if}
       {#if imageError}<p class="error-text">{imageError}</p>{/if}
+      {#if !useExternalTheme}
       <label class="checkbox">
         <input type="checkbox" bind:checked={sidebar} />
         {t('showSidebar')}
       </label>
+      {/if}
       <div class="field">
         <label for="pager-size">{t('pageSize')}</label>
         <input id="pager-size" type="number" min="1" max="100" bind:value={pagerSize} style="width: 8rem" />
@@ -383,11 +410,13 @@
         </label>
         <p class="hint">{t(useBlogitLogin ? 'useBlogitLoginHint' : 'tokenLoginHint')}</p>
       {/if}
+      {#if !useExternalTheme}
       <label class="checkbox">
         <input type="checkbox" bind:checked={themeAutoUpdate} />
         {t('themeAutoUpdate')}
       </label>
       <p class="hint">{t(themeAutoUpdate ? 'themeAutoUpdateHint' : 'themePinnedHint')}</p>
+      {/if}
       <label class="checkbox">
         <input type="checkbox" bind:checked={isPrivate} />
         {t(isGitLab ? 'createPrivateProject' : 'createPrivateRepo')}
