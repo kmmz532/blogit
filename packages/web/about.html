@@ -22,6 +22,9 @@
         try { theme = localStorage.getItem('theme'); } catch (e) {}
         var dark = theme ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
+        var locale = null;
+        try { locale = localStorage.getItem('blogit:locale'); } catch (e) {}
+        document.documentElement.lang = locale || (navigator.language.toLowerCase().indexOf('ja') === 0 ? 'ja' : 'en');
       })();
     </script>
     <link rel="icon" href="./favicon.ico" sizes="48x48">

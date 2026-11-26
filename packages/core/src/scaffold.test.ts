@@ -141,3 +141,9 @@ test('validateLinkUrl', () => {
   assert.ok(!validateLinkUrl('example.jp'));
   assert.ok(!validateLinkUrl('javascript:alert(1)'));
 });
+
+test('hugoToml: link names follow the blog language', () => {
+  const links = [{ icon: 'website', url: 'https://example.jp/' }];
+  assert.match(hugoToml({ ...config, links }), /name = "Webサイト"/);
+  assert.match(hugoToml({ ...config, language: 'en', links }), /name = "Website"/);
+});

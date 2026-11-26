@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './lib/i18n.svelte';
   import { GITLAB_COM, normalizeGitLabUrl } from '@blogit/core';
   import { oauthEnabled, saveToken, startOAuth } from './lib/auth';
   import { gitlabOAuthEnabled, saveGitLab, startGitLabOAuth } from './lib/gitlab';
@@ -38,7 +39,7 @@
         saveToken(token.trim());
       } else {
         const url = normalizeGitLabUrl(gitlabUrl);
-        if (!url) throw new Error('GitLabのURLが正しくありません。');
+        if (!url) throw new Error(t('invalidGitlabUrl'));
         await onSignInGitLab(url, gitlabToken.trim());
         saveGitLab(url, gitlabToken.trim());
       }
@@ -50,42 +51,42 @@
   }
 </script>
 
-<h1 class="page-title">Hugoブログを構築する</h1>
-<p class="lead">GitHubまたはGitLabのアカウントで、無料のHugoブログを作成します。<a href="./about.html">詳しく見る</a></p>
+<h1 class="page-title">{t('loginTitle')}</h1>
+<p class="lead">{t('loginLead')}<a href="./about.html">{t('learnMore')}</a></p>
 
 <div class="stack">
   <div class="actions">
     <button class="button" type="button" onclick={loginGitHub}>
-      <i class="fa-brands fa-github" aria-hidden="true"></i> GitHubでログイン
+      <i class="fa-brands fa-github" aria-hidden="true"></i> {t('loginGitHub')}
     </button>
     <button class="button" type="button" onclick={loginGitLab}>
-      <i class="fa-brands fa-gitlab" aria-hidden="true"></i> GitLabでログイン
+      <i class="fa-brands fa-gitlab" aria-hidden="true"></i> {t('loginGitLab')}
     </button>
   </div>
 
-  <p class="hint">ログインすると、<a href="./terms.html">利用規約</a>と<a href="./privacy.html">プライバシーポリシー</a>に同意したものとみなします。</p>
+  <p class="hint">{t('consentBefore')}<a href="./terms.html">{t('terms')}</a>{t('consentAnd')}<a href="./privacy.html">{t('privacy')}</a>{t('consentAfter')}</p>
 
   {#if tokenForm}
     <form class="stack" onsubmit={submit}>
       {#if tokenForm === 'github'}
         <div class="field">
-          <label for="token">GitHubのPersonal Access Token</label>
+          <label for="token">{t('githubToken')}</label>
           <input id="token" type="password" bind:value={token} autocomplete="off" required />
           <TokenHelp />
         </div>
       {:else}
         <div class="field">
-          <label for="gitlab-url">GitLabのURL</label>
+          <label for="gitlab-url">{t('gitlabUrl')}</label>
           <input id="gitlab-url" type="url" bind:value={gitlabUrl} autocomplete="url" required />
         </div>
         <div class="field">
-          <label for="gitlab-token">GitLabのPersonal Access Token</label>
+          <label for="gitlab-token">{t('gitlabToken')}</label>
           <input id="gitlab-token" type="password" bind:value={gitlabToken} autocomplete="off" required />
-          <p class="hint">スコープ <code>api</code> を付けたトークンを入力してください。</p>
+          <p class="hint">{t('gitlabTokenHint', { scope: 'api' })}</p>
         </div>
       {/if}
       <div class="actions">
-        <button class="button" type="submit" disabled={busy || (tokenForm === 'github' ? !token.trim() : !gitlabToken.trim() || !gitlabUrl.trim())}>ログイン</button>
+        <button class="button" type="submit" disabled={busy || (tokenForm === 'github' ? !token.trim() : !gitlabToken.trim() || !gitlabUrl.trim())}>{t('login')}</button>
       </div>
     </form>
   {/if}
@@ -96,6 +97,6 @@
 </div>
 
 <figure class="shot">
-  <img class="shot-light" src="./themes/default-home-light.png" alt="Blogitで作成したブログの例" width="1280" height="800" />
-  <img class="shot-dark" src="./themes/default-home-dark.png" alt="Blogitで作成したブログの例" width="1280" height="800" />
+  <img class="shot-light" src="./themes/default-home-light.png" alt={t('exampleAlt')} width="1280" height="800" />
+  <img class="shot-dark" src="./themes/default-home-dark.png" alt={t('exampleAlt')} width="1280" height="800" />
 </figure>

@@ -497,3 +497,11 @@ fieldset {
 .link-row > i {
   text-align: center;
 }
+
+/* 表示言語の切り替え（アイコンと切り替え先の言語名） */
+.lang-button {
+  width: auto;
+  gap: 0.35rem;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './lib/i18n.svelte';
   import { GitHubClient, GitLabClient, GITLAB_COM, type BlogConfig, type DeploymentProvider, type Owner } from '@blogit/core';
   import { onMount } from 'svelte';
   import { clearToken, completeOAuth, loadToken } from './lib/auth';
@@ -115,7 +116,7 @@
 <main class="main">
   {#if loading}
     <!-- 読み込み中はセットアップ画面の形をしたスケルトンを表示する -->
-    <div class="stack" aria-busy="true" aria-label="読み込み中">
+    <div class="stack" aria-busy="true" aria-label={t('loading')}>
       <div class="skeleton skeleton-title"></div>
       {#each [3, 2, 2] as lines}
         <div class="card stack">

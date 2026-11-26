@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './lib/i18n.svelte';
   import { clearDraft } from './lib/draft';
   import { GitHubClient, GitLabClient, isGitLabRepo, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
@@ -12,12 +13,12 @@
   const isGitLab = config.provider === 'gitlab-pages';
   const onGitLab = isGitLabRepo(config);
 
-  const labels: Record<StepId, string> = {
-    'create-repo': onGitLab ? 'プロジェクトを作成' : 'リポジトリを作成',
-    'enable-pages': isGitLab ? 'GitLab Pagesの公開設定' : config.provider === 'cloudflare-pages' ? 'リポジトリの情報を取得' : 'GitHub Pagesを有効化',
-    'push-site': 'ブログのファイルを追加',
-    'wait-deploy': '初回のビルドと公開（数分かかります）',
-  };
+  const labels: Record<StepId, string> = $derived({
+    'create-repo': t(onGitLab ? 'stepCreateProject' : 'stepCreateRepo'),
+    'enable-pages': t(isGitLab ? 'stepGitLabPages' : config.provider === 'cloudflare-pages' ? 'stepRepoInfo' : 'stepEnableGitHubPages'),
+    'push-site': t('stepPushSite'),
+    'wait-deploy': t('stepDeploy'),
+  });
   const icons: Record<StepStatus, string> = {
     pending: 'fa-regular fa-circle',
     running: 'fa-solid fa-spinner fa-spin',
@@ -46,27 +47,27 @@
     };
     try {
       if (isGitLab) {
-        if (!glClient) throw new Error('GitLabにログインしていません。');
+        if (!glClient) throw new Error(t('notLoggedIn', { service: 'GitLab' }));
         await runGitLabSetup(glClient, config, setupState, (id, s, e) => {
           status[id] = s;
           runUrl = setupState.runUrl ?? '';
           if (e) {
             error = e instanceof Error ? e.message : String(e);
-            if (/: 40[34] /.test(error)) error += '（トークンの権限が不足している可能性があります。スコープ api を付けたトークンを再入力してください）';
+            if (/: 40[34] /.test(error)) error += t('gitlabTokenScope');
           }
         });
         siteUrl = setupState.siteUrl ?? '';
       } else if (config.provider === 'cloudflare-pages') {
         // GitHubClient と GitLabClient は、ここで使うメソッドの形が同じ
         const repoClient = onGitLab ? glClient : client;
-        if (!repoClient) throw new Error(onGitLab ? 'GitLabにログインしていません。' : 'GitHubにログインしていません。');
+        if (!repoClient) throw new Error(t('notLoggedIn', { service: onGitLab ? 'GitLab' : 'GitHub' }));
         const token = loadCloudflareToken();
-        if (!token) throw new Error('Cloudflareに接続されていません。入力画面に戻って接続してください。');
-        if (!config.cloudflareAccountId) throw new Error('Cloudflareアカウントが選択されていません。');
+        if (!token) throw new Error(t('cloudflareNotConnected'));
+        if (!config.cloudflareAccountId) throw new Error(t('cloudflareAccountMissing'));
         const cf = new CloudflareClient(token);
         const ref = { owner: config.owner, repo: config.repo };
         const projectName = config.repo.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 58);
-        if (!projectName) throw new Error('リポジトリ名からCloudflare Pagesのプロジェクト名を生成できません。');
+        if (!projectName) throw new Error(t('cloudflareProjectNameFailed'));
 
         report('create-repo', 'running');
         if (!(await repoClient.repoExists(ref))) {
@@ -123,14 +124,14 @@
         if (!siteUrl) throw new Error(`Cloudflare Pages deployment timed out: ${runUrl}`);
         report('wait-deploy', 'done');
       } else {
-        if (!client) throw new Error('GitHubにログインしていません。');
+        if (!client) throw new Error(t('notLoggedIn', { service: 'GitHub' }));
         await runSetup(client, config, setupState, (id, s, e) => {
           status[id] = s;
           runUrl = setupState.runUrl ?? '';
           if (e) {
             error = e instanceof Error ? e.message : String(e);
-            if (/: 40[34] /.test(error)) error += '（トークンの権限が不足している可能性があります。権限を確認し、トークンを再入力してください）';
-            else if (id === 'enable-pages' && config.private && /: 422 /.test(error)) error += '（非公開リポジトリでGitHub Pagesを利用するには、GitHubの有料プランが必要です）';
+            if (/: 40[34] /.test(error)) error += t('githubTokenScope');
+            else if (id === 'enable-pages' && config.private && /: 422 /.test(error)) error += t('privatePagesPaid');
           }
         });
         siteUrl = setupState.siteUrl ?? '';
@@ -160,7 +161,7 @@
   onMount(start);
 </script>
 
-<h1 class="page-title">{siteUrl ? '公開しました' : '作成しています'}</h1>
+<h1 class="page-title">{t(siteUrl ? 'published' : 'creating')}</h1>
 <p class="lead">{config.owner}/{config.repo}</p>
 
 <div class="stack">
@@ -171,7 +172,7 @@
         <div>
           <div>{labels[s.id]}</div>
           {#if s.id === 'wait-deploy' && runUrl}
-            <a class="hint" href={runUrl} target="_blank" rel="noopener">{config.provider === 'cloudflare-pages' ? 'Cloudflare Pagesのデプロイを見る' : isGitLab ? 'パイプラインのログを見る' : 'Actionsのログを見る'}</a>
+            <a class="hint" href={runUrl} target="_blank" rel="noopener">{t(config.provider === 'cloudflare-pages' ? 'viewCloudflareDeploy' : isGitLab ? 'viewPipeline' : 'viewActions')}</a>
           {/if}
         </div>
       </li>
@@ -181,20 +182,20 @@
   {#if error}
     <p class="error-text">{error}</p>
     <div class="actions">
-      <button class="button" type="button" onclick={start} disabled={running}>続きから再実行</button>
-      <button class="button secondary" type="button" onclick={onBack} disabled={running}>入力に戻る</button>
+      <button class="button" type="button" onclick={start} disabled={running}>{t('retry')}</button>
+      <button class="button secondary" type="button" onclick={onBack} disabled={running}>{t('backToForm')}</button>
     </div>
     <!-- 権限不足のときだけ使うため、折りたたんでおく -->
     <details class="card">
-      <summary>トークンを変更して再実行する</summary>
+      <summary>{t('changeToken')}</summary>
     <form class="stack" onsubmit={retryWithToken}>
       <div class="field">
-        <label for="new-token">新しいトークン</label>
+        <label for="new-token">{t('newToken')}</label>
         <input id="new-token" type="password" bind:value={newToken} autocomplete="off" required />
         {#if !onGitLab}<TokenHelp />{/if}
       </div>
       <div class="actions">
-        <button class="button" type="submit" disabled={running || !newToken.trim()}>再実行</button>
+        <button class="button" type="submit" disabled={running || !newToken.trim()}>{t('rerun')}</button>
       </div>
     </form>
     </details>
@@ -202,9 +203,9 @@
 
   {#if siteUrl}
     <div class="actions">
-      <a class="button" href={siteUrl} target="_blank" rel="noopener">ブログを開く</a>
-      <a class="button secondary" href="{siteUrl}admin/" target="_blank" rel="noopener">記事を書く</a>
-      <a class="button secondary" href={onGitLab && glClient ? `${glClient.baseUrl}/${config.owner}/${config.repo}` : `https://github.com/${config.owner}/${config.repo}`} target="_blank" rel="noopener">リポジトリ</a>
+      <a class="button" href={siteUrl} target="_blank" rel="noopener">{t('openBlog')}</a>
+      <a class="button secondary" href="{siteUrl}admin/" target="_blank" rel="noopener">{t('writePost')}</a>
+      <a class="button secondary" href={onGitLab && glClient ? `${glClient.baseUrl}/${config.owner}/${config.repo}` : `https://github.com/${config.owner}/${config.repo}`} target="_blank" rel="noopener">{t('repository')}</a>
     </div>
   {/if}
 </div>

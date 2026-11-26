@@ -55,25 +55,27 @@ const str = (s: string) => JSON.stringify(s);
 
 // サイドバーのリンクに選べるアイコン。生成するサイトのテーマは Font Awesome 6.5.2 を読み込む
 export const LINK_ICONS = [
-  { id: 'website', name: 'Webサイト', icon: 'fa-solid fa-house' },
-  { id: 'github', name: 'GitHub', icon: 'fa-brands fa-github' },
-  { id: 'gitlab', name: 'GitLab', icon: 'fa-brands fa-gitlab' },
-  { id: 'x', name: 'X', icon: 'fa-brands fa-x-twitter' },
-  { id: 'bluesky', name: 'Bluesky', icon: 'fa-brands fa-bluesky' },
-  { id: 'mastodon', name: 'Mastodon', icon: 'fa-brands fa-mastodon' },
-  { id: 'threads', name: 'Threads', icon: 'fa-brands fa-threads' },
-  { id: 'instagram', name: 'Instagram', icon: 'fa-brands fa-instagram' },
-  { id: 'youtube', name: 'YouTube', icon: 'fa-brands fa-youtube' },
-  { id: 'facebook', name: 'Facebook', icon: 'fa-brands fa-facebook' },
-  { id: 'rss', name: 'RSS', icon: 'fa-solid fa-rss' },
-  { id: 'mail', name: 'メール', icon: 'fa-solid fa-envelope' },
+  { id: 'website', name: 'Webサイト', nameEn: 'Website', icon: 'fa-solid fa-house' },
+  { id: 'github', name: 'GitHub', nameEn: 'GitHub', icon: 'fa-brands fa-github' },
+  { id: 'gitlab', name: 'GitLab', nameEn: 'GitLab', icon: 'fa-brands fa-gitlab' },
+  { id: 'x', name: 'X', nameEn: 'X', icon: 'fa-brands fa-x-twitter' },
+  { id: 'bluesky', name: 'Bluesky', nameEn: 'Bluesky', icon: 'fa-brands fa-bluesky' },
+  { id: 'mastodon', name: 'Mastodon', nameEn: 'Mastodon', icon: 'fa-brands fa-mastodon' },
+  { id: 'threads', name: 'Threads', nameEn: 'Threads', icon: 'fa-brands fa-threads' },
+  { id: 'instagram', name: 'Instagram', nameEn: 'Instagram', icon: 'fa-brands fa-instagram' },
+  { id: 'youtube', name: 'YouTube', nameEn: 'YouTube', icon: 'fa-brands fa-youtube' },
+  { id: 'facebook', name: 'Facebook', nameEn: 'Facebook', icon: 'fa-brands fa-facebook' },
+  { id: 'rss', name: 'RSS', nameEn: 'RSS', icon: 'fa-solid fa-rss' },
+  { id: 'mail', name: 'メール', nameEn: 'Email', icon: 'fa-solid fa-envelope' },
 ] as const;
 
 function profileLinks(c: BlogConfig): string {
   return (c.links ?? []).flatMap(({ icon, url }) => {
     const def = LINK_ICONS.find((d) => d.id === icon);
     if (!def || !url) return [];
-    return [`  [[params.links]]\n    name = ${str(def.name)}\n    url = ${str(url)}\n    icon = ${str(def.icon)}\n`];
+    // リンク名はブログの言語にそろえる
+    const name = c.language === 'en' ? def.nameEn : def.name;
+    return [`  [[params.links]]\n    name = ${str(name)}\n    url = ${str(url)}\n    icon = ${str(def.icon)}\n`];
   }).join('');
 }
 
