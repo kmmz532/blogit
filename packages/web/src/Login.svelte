@@ -10,38 +10,38 @@
     error?: string;
   } = $props();
 
+  // OAuth が使えないときだけ、ボタンを押すとトークンの入力欄を出す
+  let tokenForm = $state<'github' | 'gitlab' | null>(null);
   let token = $state('');
   let gitlabUrl = $state(GITLAB_COM);
   let gitlabToken = $state('');
   let busy = $state(false);
   let message = $state('');
 
-  async function submitToken(e: SubmitEvent) {
-    e.preventDefault();
-    busy = true;
-    message = '';
-    try {
-      await onSignIn(token.trim());
-      saveToken(token.trim());
-    } catch (err) {
-      message = err instanceof Error ? err.message : String(err);
-    } finally {
-      busy = false;
-    }
+  function loginGitHub() {
+    if (oauthEnabled) startOAuth();
+    else tokenForm = 'github';
   }
 
-  async function submitGitLab(e: SubmitEvent) {
+  function loginGitLab() {
+    if (gitlabOAuthEnabled) startGitLabOAuth();
+    else tokenForm = 'gitlab';
+  }
+
+  async function submit(e: SubmitEvent) {
     e.preventDefault();
-    const url = normalizeGitLabUrl(gitlabUrl);
-    if (!url) {
-      message = 'GitLab の URL が正しくありません。';
-      return;
-    }
     busy = true;
     message = '';
     try {
-      await onSignInGitLab(url, gitlabToken.trim());
-      saveGitLab(url, gitlabToken.trim());
+      if (tokenForm === 'github') {
+        await onSignIn(token.trim());
+        saveToken(token.trim());
+      } else {
+        const url = normalizeGitLabUrl(gitlabUrl);
+        if (!url) throw new Error('GitLab の URL が正しくありません。');
+        await onSignInGitLab(url, gitlabToken.trim());
+        saveGitLab(url, gitlabToken.trim());
+      }
     } catch (err) {
       message = err instanceof Error ? err.message : String(err);
     } finally {
@@ -57,60 +57,39 @@
 </p>
 
 <div class="stack">
-  <section class="card stack">
-    <h2 class="section-title">GitHub</h2>
-    <p class="hint">GitHub Pages または Cloudflare Pages に公開します。</p>
-    {#if oauthEnabled}
-      <div class="actions">
-        <button class="button" type="button" onclick={startOAuth}>
-          <i class="fa-brands fa-github" aria-hidden="true"></i> GitHub でログイン
-        </button>
-      </div>
-    {:else}
-      <form class="stack" onsubmit={submitToken}>
+  <div class="actions">
+    <button class="button" type="button" onclick={loginGitHub}>
+      <i class="fa-brands fa-github" aria-hidden="true"></i> GitHub でログイン
+    </button>
+    <button class="button" type="button" onclick={loginGitLab}>
+      <i class="fa-brands fa-gitlab" aria-hidden="true"></i> GitLab でログイン
+    </button>
+  </div>
+
+  {#if tokenForm}
+    <form class="stack" onsubmit={submit}>
+      {#if tokenForm === 'github'}
         <div class="field">
-          <label for="token">GitHub のトークン（開発用）</label>
+          <label for="token">GitHub の Personal Access Token</label>
           <input id="token" type="password" bind:value={token} autocomplete="off" required />
-          <p class="hint">OAuth App が未設定のため、Personal Access Token でログインします。</p>
           <TokenHelp />
         </div>
-        <div class="actions">
-          <button class="button" type="submit" disabled={busy || !token.trim()}>ログイン</button>
-        </div>
-      </form>
-    {/if}
-  </section>
-
-  <section class="card stack">
-    <h2 class="section-title">GitLab</h2>
-    <p class="hint">GitLab Pages に公開します。gitlab.com とセルフホストの GitLab に対応しています。</p>
-    {#if gitlabOAuthEnabled}
-      <div class="actions">
-        <button class="button" type="button" onclick={startGitLabOAuth}>
-          <i class="fa-brands fa-gitlab" aria-hidden="true"></i> GitLab.com でログイン
-        </button>
-      </div>
-    {/if}
-    <details open={!gitlabOAuthEnabled}>
-      <summary>{gitlabOAuthEnabled ? 'セルフホストの GitLab、またはアクセストークンでログイン' : 'アクセストークンでログイン'}</summary>
-      <form class="stack" onsubmit={submitGitLab}>
+      {:else}
         <div class="field">
           <label for="gitlab-url">GitLab の URL</label>
           <input id="gitlab-url" type="url" bind:value={gitlabUrl} autocomplete="url" required />
         </div>
         <div class="field">
-          <label for="gitlab-token">Personal Access Token</label>
+          <label for="gitlab-token">GitLab の Personal Access Token</label>
           <input id="gitlab-token" type="password" bind:value={gitlabToken} autocomplete="off" required />
-          <p class="hint">
-            User settings → Access tokens で、スコープ <code>api</code> を付けたトークンを作成してください。トークンはこのタブを閉じると消えます。
-          </p>
+          <p class="hint">スコープ <code>api</code> を付けたトークンを入力してください。</p>
         </div>
-        <div class="actions">
-          <button class="button" type="submit" disabled={busy || !gitlabToken.trim() || !gitlabUrl.trim()}>ログイン</button>
-        </div>
-      </form>
-    </details>
-  </section>
+      {/if}
+      <div class="actions">
+        <button class="button" type="submit" disabled={busy || (tokenForm === 'github' ? !token.trim() : !gitlabToken.trim() || !gitlabUrl.trim())}>ログイン</button>
+      </div>
+    </form>
+  {/if}
 
   {#if error || message}
     <p class="error-text">{error || message}</p>
