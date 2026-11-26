@@ -83,8 +83,8 @@ export class GitLabClient {
     }
   }
 
-  // 空の公開プロジェクトを作る。Pages も誰でも閲覧できるようにする
-  async createRepo(owner: string, ownerType: Owner['type'], repo: string, description: string): Promise<void> {
+  // 空のプロジェクトを作る。非公開のプロジェクトでも Pages は誰でも閲覧できるようにする
+  async createRepo(owner: string, ownerType: Owner['type'], repo: string, description: string, isPrivate = false): Promise<void> {
     let namespaceId: number | undefined;
     if (ownerType === 'Organization') {
       namespaceId = (await this.request<{ id: number }>('GET', `/namespaces/${encodeURIComponent(owner)}`)).id;
@@ -93,7 +93,7 @@ export class GitLabClient {
       name: repo,
       path: repo,
       description,
-      visibility: 'public',
+      visibility: isPrivate ? 'private' : 'public',
       pages_access_level: 'public',
       default_branch: 'main',
       ...(namespaceId === undefined ? {} : { namespace_id: namespaceId }),

@@ -69,7 +69,7 @@
 
         report('create-repo', 'running');
         if (!(await repoClient.repoExists(ref))) {
-          await repoClient.createRepo(config.owner, config.ownerType, config.repo, config.description);
+          await repoClient.createRepo(config.owner, config.ownerType, config.repo, config.description, config.private);
           for (let i = 0; i < 10 && !(await repoClient.repoExists(ref)); i++) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         report('create-repo', 'done');

@@ -394,3 +394,10 @@ fieldset {
     letter-spacing: -1.5px;
   }
 }
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}

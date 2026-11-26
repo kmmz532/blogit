@@ -29,7 +29,7 @@ export const gitlabSteps: GitLabStep[] = [
     id: 'create-repo',
     done: ({ gl, ref }) => gl.repoExists(ref),
     async run({ gl, config, ref }) {
-      await gl.createRepo(ref.owner, config.ownerType, ref.repo, config.description);
+      await gl.createRepo(ref.owner, config.ownerType, ref.repo, config.description, config.private);
       for (let i = 0; i < 10 && !(await gl.repoExists(ref)); i++) await sleep(1000);
     },
   },

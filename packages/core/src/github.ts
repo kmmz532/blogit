@@ -58,9 +58,9 @@ export class GitHubClient {
   }
 
   // README だけの初期コミット付きで作る（Git Data API でコミットを積むには既存のブランチが要る）
-  async createRepo(owner: string, ownerType: Owner['type'], repo: string, description: string): Promise<void> {
+  async createRepo(owner: string, ownerType: Owner['type'], repo: string, description: string, isPrivate = false): Promise<void> {
     const path = ownerType === 'Organization' ? `/orgs/${owner}/repos` : '/user/repos';
-    await this.request('POST', path, { name: repo, description, private: false, auto_init: true });
+    await this.request('POST', path, { name: repo, description, private: isPrivate, auto_init: true });
   }
 
   async getRepositoryDetails({ owner, repo }: RepoRef): Promise<{ id: number; ownerId: number; defaultBranch: string }> {

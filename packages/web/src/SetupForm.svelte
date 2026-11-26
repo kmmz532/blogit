@@ -40,6 +40,7 @@
   let author = $state(owners[0].login);
   let theme = $state<ThemeName>('default');
   let language = $state<'ja' | 'en'>('ja');
+  let isPrivate = $state(false);
   let busy = $state(false);
   let connecting = $state(false);
   let error = $state('');
@@ -89,7 +90,7 @@
         owner, ownerType, repo, provider: selectedProvider,
         ...(selectedProvider === 'cloudflare-pages' ? { cloudflareAccountId: selectedCloudflareAccountId } : {}),
         ...(isGitLab ? { gitlabUrl } : {}),
-        theme, language,
+        theme, language, private: isPrivate,
       });
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -198,7 +199,16 @@
       {:else}
         <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドだけが使えます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
       {/if}
-      <p class="hint">{isGitLab ? 'プロジェクト' : 'リポジトリ'}は公開（Public）で作成します。</p>
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={isPrivate} />
+        {isGitLab ? 'プロジェクト' : 'リポジトリ'}を非公開（Private）で作成する
+      </label>
+      {#if isPrivate}
+        <p class="hint">
+          {#if selectedProvider === 'github-pages'}GitHub Pages を非公開リポジトリで使うには、有料プラン（Pro・Team など）が必要です。{/if}
+          公開前の画像のプレビューは、記事のリポジトリが公開のときだけ表示されます。
+        </p>
+      {/if}
     </div>
   </section>
 

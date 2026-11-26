@@ -35,7 +35,7 @@ export const steps: Step[] = [
     id: 'create-repo',
     done: ({ gh, ref }) => gh.repoExists(ref),
     async run({ gh, config, ref }) {
-      await gh.createRepo(ref.owner, config.ownerType, ref.repo, config.description);
+      await gh.createRepo(ref.owner, config.ownerType, ref.repo, config.description, config.private);
       // 作成直後は API から見えないことがあるので、見えるまで待つ
       for (let i = 0; i < 10 && !(await gh.repoExists(ref)); i++) await sleep(1000);
     },
