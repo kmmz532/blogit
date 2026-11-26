@@ -1,6 +1,33 @@
 # hugo-gh-admin のサイト設定（/admin/settings/）に表示する、Blogit テーマの設定項目
 
 [[fields]]
+  key = "theme"
+  type = "module"
+  [fields.label]
+    ja = "テーマ"
+    en = "Theme"
+  [[fields.options]]
+    value = "github.com/kmmz532/blogit/themes/default"
+    label = "Default"
+  [[fields.options]]
+    value = "github.com/kmmz532/blogit/themes/warm"
+    label = "Warm"
+  [[fields.options]]
+    value = "github.com/kmmz532/blogit/themes/cool"
+    label = "Cool"
+
+# テーマ（と共通部分の base）の版を go.mod で固定するか。固定しなければビルドのたびに最新の版を利用する
+[[fields]]
+  key = "themeVersion"
+  type = "moduleversion"
+  prefix = "github.com/kmmz532/blogit/themes/"
+  modules = ["github.com/kmmz532/blogit/themes/base"]
+  source = "kmmz532/blogit"
+  [fields.label]
+    ja = "テーマを自動で更新する"
+    en = "Update the theme automatically"
+
+[[fields]]
   key = "bio"
   table = "params"
   type = "textarea"
