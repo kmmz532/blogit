@@ -16,7 +16,7 @@
     value = "github.com/kmmz532/blogit/themes/cool"
     label = "Cool"
 
-# テーマ（と共通部分の base）の版を go.mod で固定するか。固定しなければビルドのたびに最新の版を利用する
+# テーマ（と共通部分の base）のバージョンを go.mod で固定するか。固定しなければビルドのたびに最新バージョンを利用する
 [[fields]]
   key = "themeVersion"
   type = "moduleversion"

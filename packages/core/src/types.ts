@@ -34,7 +34,7 @@ export interface BlogConfig {
   theme: ThemeName;
   // 管理画面（hugo-gh-admin）の「GitHub でログイン」に使う OAuth の設定。省略時はトークンを入力してログインする（GitHub のリポジトリのみ）
   adminLogin?: AdminLogin;
-  // テーマの版を固定するときの Go modules の版（例: v0.0.0-20261126000000-0123456789ab）。省略時は最新の版を利用し、自動で更新される
+  // テーマのバージョンを固定するときの Go modules のバージョン（例: v0.0.0-20261126000000-0123456789ab）。省略時は最新バージョンを利用し、自動で更新される
   themeVersion?: string;
   language: Language;
 }

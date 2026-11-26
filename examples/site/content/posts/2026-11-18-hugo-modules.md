@@ -7,7 +7,7 @@ tags: ["hugo", "go"]
 
 ![](/images/leaf.svg)
 
-Hugo Modules を使うと、テーマを Go のモジュールとして取り込めます。版は `go.mod` に記録されます。
+Hugo Modules を使うと、テーマを Go のモジュールとして取り込めます。バージョンは `go.mod` に記録されます。
 
 ## 取り込み方
 

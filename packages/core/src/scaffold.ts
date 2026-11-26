@@ -91,7 +91,7 @@ export function validateLinkUrl(url: string): boolean {
 }
 
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL。branch は記事を保存するブランチ（リポジトリの既定のブランチ）
-// 管理画面の「最新の版で再ビルド」の設定。GitHub Pages はワークフロー、GitLab Pages はパイプラインを実行する。
+// 管理画面の「最新バージョンで再ビルド」の設定。GitHub Pages はワークフロー、GitLab Pages はパイプラインを実行する。
 // Cloudflare Pages は push でビルドするため、空のコミットを積む（GitHub のみ。GitLab の API では空のコミットを作れない）
 function buildSettings(c: BlogConfig): string {
   if (c.provider === 'github-pages') return '  buildWorkflow = "deploy.yml"';
@@ -114,7 +114,7 @@ ${gitlab ? `  provider = "gitlab"
   siteRepo = ${str(repo)}
   siteBranch = ${str(branch)}
   siteConfigPath = "hugo.toml"${buildSettings(c) ? `
-  # サイト設定の「バージョン」タブの「最新の版で再ビルド」の方法
+  # 管理画面の「更新」の「最新バージョンで再ビルド」の方法
 ${buildSettings(c)}` : ''}${c.adminLogin && !gitlab ? `
   # 「GitHub でログイン」（Blogit の OAuth App と認証用 Worker を利用する）
   oauthClientID = ${str(c.adminLogin.clientId)}
@@ -166,7 +166,7 @@ export function pseudoVersion(sha: string, date: string): string {
   return `v0.0.0-${time}-${sha.slice(0, 12)}`;
 }
 
-// テーマのリポジトリの既定のブランチの最新コミットから、テーマを固定する版を取得する
+// テーマのリポジトリの既定のブランチの最新コミットから、テーマを固定するバージョンを取得する
 export async function fetchThemeVersion(): Promise<string> {
   const res = await fetchWithRetry('https://api.github.com/repos/kmmz532/blogit/commits/main', {
     headers: { Accept: 'application/vnd.github+json' },
@@ -176,7 +176,7 @@ export async function fetchThemeVersion(): Promise<string> {
   return pseudoVersion(data.sha, data.commit.committer.date);
 }
 
-// themeVersion を指定した場合はテーマ（と共通部分の base）をその版に固定する。省略時はビルドのたびに最新の版を利用する
+// themeVersion を指定した場合はテーマ（と共通部分の base）をそのバージョンに固定する。省略時はビルドのたびに最新バージョンを利用する
 export function goMod(c: BlogConfig): string {
   const host = isGitLabRepo(c)
     ? new URL(normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM).host

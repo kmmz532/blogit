@@ -7,7 +7,7 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 
 - GitHubまたはGitLabにログインし、ブログ用のリポジトリを作成する。
 - Hugoのサイト一式（設定・テーマ・最初の記事・ビルド設定）をコミットし、初回の公開まで自動で行う。
-- 公開後は、ブラウザの管理画面（[hugo-gh-admin](https://github.com/kmmz532/hugo-gh-admin)）から記事の執筆やサイト設定の変更を行う。管理画面のサイト設定では、ブログ名・説明・テーマ・テーマの版の固定・サイドバーのリンクなどを変更できる。
+- 公開後は、ブラウザの管理画面（[hugo-gh-admin](https://github.com/kmmz532/hugo-gh-admin)）から記事の執筆やサイト設定の変更を行う。管理画面の「設定」ではブログ名・説明・テーマ・サイドバーのリンクなどを、「更新」ではテーマのバージョンの固定と再ビルドを行える。
 
 | リポジトリ | 公開先 | ビルド |
 |---|---|---|
@@ -19,7 +19,7 @@ GitHub PagesやGitLab Pages、Cloudflare PagesでHugoブログを構築するWeb
 - リポジトリは公開・非公開のどちらでも作成できる。GitHub Pagesを非公開リポジトリで利用するには、GitHubの有料プランが必要。
 - Cloudflare Pagesを利用する場合は、CloudflareのダッシュボードでGitHubまたはGitLabとの連携を済ませておく。
 - 高度な設定では、説明・著者・サイドバーのリンク・ファビコン・記事カードの既定のサムネイルなども設定できる。作成後に管理画面のサイト設定から変更できる。
-- テーマは `default`・`warm`・`cool` から選択する。既定ではビルドのたびに最新のテーマを利用し、高度な設定で作成時の版に固定することもできる。
+- テーマは `default`・`warm`・`cool` から選択する。既定ではビルドのたびに最新のテーマを利用し、高度な設定で作成時のバージョンに固定することもできる。
 - GitHubのリポジトリでは、管理画面に「GitHubでログイン」を設定する（BlogitのOAuth Appと `workers/auth` を共用する）。高度な設定でオフにすると、管理画面にはトークンを入力してログインする。
 - テーマ（`themes/base`）は、Blogitで作成したブログ以外のHugoサイトからも取り込める。見た目は、サイト側の `layouts/` と `assets/` で上書きする（[themes/base/README.md](themes/base/README.md)）。
 - 構築の途中で失敗した場合や、ビルドが時間内に完了しなかった場合は、完了していない手順から再実行できる。障害の可能性があるときは、GitHub・GitLab・Cloudflareのステータスページへのリンクを表示する。
