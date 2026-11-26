@@ -278,9 +278,9 @@
         <input id="author" type="text" bind:value={author} placeholder={owner} />
       </div>
       <div class="field">
-        <label for="bio">プロフィール</label>
-        <input id="bio" type="text" bind:value={bio} />
-        <p class="hint">サイドバーに著者名と一緒に表示します。</p>
+        <label for="bio">自己紹介</label>
+        <input id="bio" type="text" bind:value={bio} placeholder="例: 読んだ本と日々の記録を書いています" />
+        <p class="hint">サイドバーの著者名の下に表示します。</p>
       </div>
       <fieldset class="field">
         <legend>サイドバーのリンク</legend>
