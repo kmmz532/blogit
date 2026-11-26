@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeGitLabUrl } from './gitlab.ts';
-import { gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
+import { validateHttpUrl, gitlabPagesBaseURL, hugoToml, pagesBaseURL, siteFiles, validateCustomDomain, validateGitLabProjectPath } from './scaffold.ts';
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
@@ -117,4 +117,26 @@ test('validateCustomDomain', () => {
 test('siteFiles: GitHub Pages with a custom domain uses it as baseURL', () => {
   const files = siteFiles({ ...config, customDomain: 'Blog.Example.jp' });
   assert.match(files['hugo.toml'], /^baseURL = "https:\/\/blog\.example\.jp\/"$/m);
+});
+
+test('hugoToml: advanced settings', () => {
+  const toml = hugoToml({ ...config, bio: '自己紹介', sidebar: false, pagerSize: 20, links: { github: 'https://github.com/example', x: 'https://x.com/example' } });
+  assert.match(toml, /^  pagerSize = 20$/m);
+  assert.match(toml, /^  bio = "自己紹介"$/m);
+  assert.match(toml, /^  sidebar = false$/m);
+  assert.match(toml, /name = "GitHub"\n    url = "https:\/\/github\.com\/example"\n    icon = "fa-brands fa-github"/);
+  assert.match(toml, /name = "X"\n    url = "https:\/\/x\.com\/example"/);
+  assert.doesNotMatch(toml, /name = "Web"/);
+});
+
+test('hugoToml: defaults without advanced settings', () => {
+  const toml = hugoToml(config);
+  assert.match(toml, /^  pagerSize = 10$/m);
+  assert.doesNotMatch(toml, /bio =|sidebar =|params\.links/);
+});
+
+test('validateHttpUrl', () => {
+  assert.ok(validateHttpUrl('https://example.jp/'));
+  assert.ok(!validateHttpUrl('example.jp'));
+  assert.ok(!validateHttpUrl('javascript:alert(1)'));
 });

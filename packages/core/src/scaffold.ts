@@ -53,6 +53,28 @@ export function defaultBaseURL(c: BlogConfig): string {
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
+// サイドバーのリンク。アイコンはテーマの link-icon.html が SVG にする
+const LINK_TYPES = [
+  ['website', 'Web', 'fa-solid fa-house'],
+  ['github', 'GitHub', 'fa-brands fa-github'],
+  ['x', 'X', 'fa-brands fa-x-twitter'],
+] as const;
+
+function profileLinks(c: BlogConfig): string {
+  return LINK_TYPES.filter(([key]) => c.links?.[key])
+    .map(([key, name, icon]) => `  [[params.links]]\n    name = ${str(name)}\n    url = ${str(c.links![key]!)}\n    icon = ${str(icon)}\n`)
+    .join('');
+}
+
+// http(s) の URL として受け付ける形か
+export function validateHttpUrl(url: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL。branch は記事を保存するブランチ（リポジトリの既定のブランチ）
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c), branch = 'main'): string {
   const repo = `${c.owner}/${c.repo}`;
@@ -78,7 +100,7 @@ timeout = "5m"
 enableRobotsTXT = true
 
 [pagination]
-  pagerSize = 10
+  pagerSize = ${c.pagerSize ?? 10}
 
 [taxonomies]
   tag = "tags"
@@ -99,7 +121,7 @@ enableRobotsTXT = true
   description = ${str(c.description)}
   author = ${str(c.author)}
   footer = ${str(`© ${new Date().getFullYear()} ${c.author}`)}
-
+${c.bio ? `  bio = ${str(c.bio)}\n` : ''}${c.sidebar === false ? '  sidebar = false\n' : ''}${profileLinks(c)}
 ${admin}
 
 # テーマ（Blogit）。default / warm / cool から選べる

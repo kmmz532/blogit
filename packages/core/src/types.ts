@@ -17,6 +17,14 @@ export interface BlogConfig {
   gitlabUrl?: string;
   // provider が github-pages のときの独自ドメイン（例: blog.example.jp）。省略時は GitHub Pages の既定の URL
   customDomain?: string;
+  // サイドバーのプロフィール文
+  bio?: string;
+  // サイドバーのリンク（Webサイト・GitHub・X の URL）
+  links?: { website?: string; github?: string; x?: string };
+  // false ならサイドバーを表示しない（1カラム）。省略時は表示する
+  sidebar?: boolean;
+  // 一覧の1ページあたりの記事数。省略時は10
+  pagerSize?: number;
   // true ならリポジトリを非公開で作成する。省略時は公開
   private?: boolean;
   theme: ThemeName;

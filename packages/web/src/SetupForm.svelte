@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
+  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateHttpUrl, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
+  import { loadDraft, saveDraft } from './lib/draft';
 
   let {
     platform, client, gitlabUrl = GITLAB_COM, owners, cloudflareAccounts, cloudflareConnected, cloudflareError, selectedCloudflareAccountId, selectedProvider, onSelectProvider, onConnectCloudflare, onSelectCloudflareAccount, onSubmit,
   }: {
     platform: 'github' | 'gitlab';
     // GitHubClient と GitLabClient の共通部分だけを使う
-    client: { repoExists(ref: RepoRef): Promise<boolean>; getUserSiteOrigin?(owner: string): Promise<string | null> };
+    client: { repoExists(ref: RepoRef): Promise<boolean>; getUserSiteOrigin?(owner: string): Promise<string | null>; isBlogitSite?(ref: RepoRef): Promise<boolean> };
     gitlabUrl?: string;
     owners: Owner[];
     cloudflareAccounts: CloudflareAccount[];
@@ -33,15 +34,29 @@
   ];
   const shot = (theme: ThemeName, view: string) => `./themes/${theme}-${view}.png`;
   let view = $state('home-light');
-  let owner = $state(owners[0].login);
-  let repo = $state('blog');
-  let title = $state('');
-  let description = $state('');
-  let author = $state(owners[0].login);
-  let theme = $state<ThemeName>('default');
-  let language = $state<'ja' | 'en'>('ja');
-  let isPrivate = $state(false);
-  let customDomain = $state('');
+  // 前回の入力内容を復元する。作成先のアカウントは、ログイン中のアカウントで選べるものだけ使う
+  const draft = loadDraft();
+  const pick = <T,>(key: string, fallback: T): T => (typeof draft[key] === typeof fallback ? (draft[key] as T) : fallback);
+  let owner = $state(owners.some((o) => o.login === draft.owner) ? (draft.owner as string) : owners[0].login);
+  let repo = $state(pick('repo', 'blog'));
+  let title = $state(pick('title', ''));
+  let description = $state(pick('description', ''));
+  let author = $state(pick('author', ''));
+  let theme = $state<ThemeName>(themes.some((t) => t.name === draft.theme) ? (draft.theme as ThemeName) : 'default');
+  let language = $state<'ja' | 'en'>(draft.language === 'en' ? 'en' : 'ja');
+  let isPrivate = $state(pick('isPrivate', false));
+  let customDomain = $state(pick('customDomain', ''));
+  let bio = $state(pick('bio', ''));
+  let linkWebsite = $state(pick('linkWebsite', ''));
+  let linkGithub = $state(pick('linkGithub', ''));
+  let linkX = $state(pick('linkX', ''));
+  let sidebar = $state(pick('sidebar', true));
+  let pagerSize = $state(pick('pagerSize', 10));
+  $effect(() => {
+    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, linkWebsite, linkGithub, linkX, sidebar, pagerSize });
+  });
+  // 同じ作成先に、途中まで作成したリポジトリがあるとき
+  let resumable = $state(false);
   let busy = $state(false);
   let connecting = $state(false);
   let error = $state('');
@@ -68,7 +83,15 @@
     : !repoValid ? ''
     : isGitLab ? (gitlabUrl === GITLAB_COM ? gitlabPagesBaseURL(owner, repo) : '')
     : pagesBaseURL(owner, repo, userSiteOrigins[owner]));
-  const canSubmit = $derived(repoValid && title.trim() && (!useCustomDomain || domainValid) && (selectedProvider !== 'cloudflare-pages'
+  const links = $derived({ website: linkWebsite.trim(), github: linkGithub.trim(), x: linkX.trim() });
+  const linksValid = $derived(Object.values(links).every((u) => !u || validateHttpUrl(u)));
+  const pagerSizeValid = $derived(Number.isInteger(pagerSize) && pagerSize >= 1 && pagerSize <= 100);
+  $effect(() => {
+    // 作成先を変えたら、再開の確認を取り消す
+    void owner; void repo;
+    resumable = false;
+  });
+  const canSubmit = $derived(repoValid && title.trim() && (!useCustomDomain || domainValid) && linksValid && pagerSizeValid && (selectedProvider !== 'cloudflare-pages'
     || (cloudflareConnected && !!selectedCloudflareAccountId && cloudflareRepoValid)));
 
   async function connect() {
@@ -93,11 +116,17 @@
         error = '先にCloudflareアカウントを接続してください。';
         return;
       }
-      if (await client.repoExists({ owner, repo })) {
+      if (!resumable && await client.repoExists({ owner, repo })) {
+        // Blogit が途中まで作成したリポジトリなら、続きから構築できる（GitHub Pages のみ）
+        if (selectedProvider === 'github-pages' && client.isBlogitSite && await client.isBlogitSite({ owner, repo })) {
+          resumable = true;
+          return;
+        }
         error = `${owner}/${repo} はすでに存在します。別の名前を入力してください。`;
         return;
       }
       const ownerType = owners.find((o) => o.login === owner)!.type;
+      const linkValues = Object.fromEntries(Object.entries(links).filter(([, u]) => u));
       onSubmit({
         title: title.trim(), description: description.trim(), author: author.trim() || owner,
         owner, ownerType, repo, provider: selectedProvider,
@@ -105,6 +134,10 @@
         ...(isGitLab ? { gitlabUrl } : {}),
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
+        ...(bio.trim() ? { bio: bio.trim() } : {}),
+        ...(Object.keys(linkValues).length ? { links: linkValues } : {}),
+        ...(sidebar ? {} : { sidebar: false }),
+        ...(pagerSize !== 10 ? { pagerSize } : {}),
       });
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -237,6 +270,27 @@
         <label for="author">著者名</label>
         <input id="author" type="text" bind:value={author} placeholder={owner} />
       </div>
+      <div class="field">
+        <label for="bio">プロフィール</label>
+        <input id="bio" type="text" bind:value={bio} />
+        <p class="hint">サイドバーに著者名と一緒に表示します。</p>
+      </div>
+      <fieldset class="field">
+        <legend>サイドバーのリンク</legend>
+        <input type="url" bind:value={linkWebsite} placeholder="Webサイト（https://example.jp）" aria-label="WebサイトのURL" />
+        <input type="url" bind:value={linkGithub} placeholder="GitHub（https://github.com/example）" aria-label="GitHubのURL" />
+        <input type="url" bind:value={linkX} placeholder="X（https://x.com/example）" aria-label="XのURL" />
+        {#if !linksValid}<p class="error-text">URLは https:// から入力してください。</p>{/if}
+      </fieldset>
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={sidebar} />
+        サイドバーを表示する
+      </label>
+      <div class="field">
+        <label for="pager-size">1ページあたりの記事数</label>
+        <input id="pager-size" type="number" min="1" max="100" bind:value={pagerSize} style="width: 8rem" />
+        {#if !pagerSizeValid}<p class="error-text">1から100までの数を入力してください。</p>{/if}
+      </div>
       <fieldset class="field">
         <legend>言語</legend>
         <div class="choices">
@@ -269,7 +323,10 @@
   </details>
 
   {#if error}<p class="error-text">{error}</p>{/if}
+  {#if resumable}
+    <p class="hint">{owner}/{repo} は途中まで作成されています。完了していない手順から構築を再開します。</p>
+  {/if}
   <div class="actions">
-    <button class="button" type="submit" disabled={busy || !canSubmit}>作成して公開する</button>
+    <button class="button" type="submit" disabled={busy || !canSubmit}>{resumable ? '続きから構築する' : '作成して公開する'}</button>
   </div>
 </form>

@@ -68,6 +68,29 @@ export class GitHubClient {
     return { id: r.id, ownerId: r.owner.id, defaultBranch: r.default_branch };
   }
 
+  // ファイルの中身（テキスト）。ファイルがなければ null
+  async getFileText({ owner, repo }: RepoRef, path: string): Promise<string | null> {
+    try {
+      const f = await this.request<{ content: string }>('GET', `/repos/${owner}/${repo}/contents/${path}`);
+      const bytes = Uint8Array.from(atob(f.content.replace(/\n/g, '')), (c) => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    } catch (e) {
+      if (e instanceof GitHubError && e.status === 404) return null;
+      throw e;
+    }
+  }
+
+  // Blogit が作成したサイトのファイルが追加済みか（途中で止まったリポジトリの再開に使う）
+  async isBlogitSite(ref: RepoRef): Promise<boolean> {
+    const toml = await this.getFileText(ref, 'hugo.toml');
+    return toml !== null && toml.includes('[params.ghAdmin]') && toml.includes(`siteRepo = "${ref.owner}/${ref.repo}"`);
+  }
+
+  async getBranchHeadSha({ owner, repo }: RepoRef, branch: string): Promise<string> {
+    const r = await this.request<{ object: { sha: string } }>('GET', `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
+    return r.object.sha;
+  }
+
   async getDefaultBranch(ref: RepoRef): Promise<string> {
     return (await this.getRepositoryDetails(ref)).defaultBranch;
   }

@@ -55,7 +55,13 @@ export const steps: Step[] = [
   },
   {
     id: 'push-site',
-    done: async ({ state }) => state.commitSha !== undefined,
+    // サイトのファイルが追加済みなら（前回の途中で止まった場合も）、既定のブランチの最新コミットのデプロイを待つ
+    async done({ gh, ref, state }) {
+      if (state.commitSha !== undefined) return true;
+      if (!(await gh.isBlogitSite(ref))) return false;
+      state.commitSha = await gh.getBranchHeadSha(ref, await gh.getDefaultBranch(ref));
+      return true;
+    },
     async run({ gh, config, ref, state }) {
       const branch = await gh.getDefaultBranch(ref);
       // 独自ドメイン（例: ユーザーの github.io に設定したドメイン）があれば、その URL を baseURL にする

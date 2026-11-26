@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { clearDraft } from './lib/draft';
   import { GitHubClient, GitLabClient, isGitLabRepo, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
@@ -134,6 +135,8 @@
         });
         siteUrl = setupState.siteUrl ?? '';
       }
+      // 作成が完了したら、入力内容の下書きは不要になる
+      if (siteUrl) clearDraft();
     } catch (e) {
       if (!error) error = e instanceof Error ? e.message : String(e);
     } finally {

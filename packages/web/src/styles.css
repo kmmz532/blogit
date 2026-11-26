@@ -194,6 +194,8 @@ a:hover {
 
 input[type="text"],
 input[type="password"],
+input[type="url"],
+input[type="number"],
 select,
 textarea {
   width: 100%;
