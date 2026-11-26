@@ -19,8 +19,8 @@ export interface BlogConfig {
   customDomain?: string;
   // サイドバーのプロフィール文
   bio?: string;
-  // サイドバーのリンク（Webサイト・GitHub・X の URL）
-  links?: { website?: string; github?: string; x?: string };
+  // サイドバーのリンク。icon は LINK_ICONS の id
+  links?: ProfileLink[];
   // false ならサイドバーを表示しない（1カラム）。省略時は表示する
   sidebar?: boolean;
   // 一覧の1ページあたりの記事数。省略時は10
@@ -29,6 +29,11 @@ export interface BlogConfig {
   private?: boolean;
   theme: ThemeName;
   language: Language;
+}
+
+export interface ProfileLink {
+  icon: string;
+  url: string;
 }
 
 export interface Owner {

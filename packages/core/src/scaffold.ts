@@ -53,23 +53,34 @@ export function defaultBaseURL(c: BlogConfig): string {
 // TOML の基本文字列。JSON の文字列エスケープは TOML でもそのまま通る
 const str = (s: string) => JSON.stringify(s);
 
-// サイドバーのリンク。アイコンはテーマの link-icon.html が SVG にする
-const LINK_TYPES = [
-  ['website', 'Web', 'fa-solid fa-house'],
-  ['github', 'GitHub', 'fa-brands fa-github'],
-  ['x', 'X', 'fa-brands fa-x-twitter'],
+// サイドバーのリンクに選べるアイコン。生成するサイトのテーマは Font Awesome 6.5.2 を読み込む
+export const LINK_ICONS = [
+  { id: 'website', name: 'Webサイト', icon: 'fa-solid fa-house' },
+  { id: 'github', name: 'GitHub', icon: 'fa-brands fa-github' },
+  { id: 'gitlab', name: 'GitLab', icon: 'fa-brands fa-gitlab' },
+  { id: 'x', name: 'X', icon: 'fa-brands fa-x-twitter' },
+  { id: 'bluesky', name: 'Bluesky', icon: 'fa-brands fa-bluesky' },
+  { id: 'mastodon', name: 'Mastodon', icon: 'fa-brands fa-mastodon' },
+  { id: 'threads', name: 'Threads', icon: 'fa-brands fa-threads' },
+  { id: 'instagram', name: 'Instagram', icon: 'fa-brands fa-instagram' },
+  { id: 'youtube', name: 'YouTube', icon: 'fa-brands fa-youtube' },
+  { id: 'facebook', name: 'Facebook', icon: 'fa-brands fa-facebook' },
+  { id: 'rss', name: 'RSS', icon: 'fa-solid fa-rss' },
+  { id: 'mail', name: 'メール', icon: 'fa-solid fa-envelope' },
 ] as const;
 
 function profileLinks(c: BlogConfig): string {
-  return LINK_TYPES.filter(([key]) => c.links?.[key])
-    .map(([key, name, icon]) => `  [[params.links]]\n    name = ${str(name)}\n    url = ${str(c.links![key]!)}\n    icon = ${str(icon)}\n`)
-    .join('');
+  return (c.links ?? []).flatMap(({ icon, url }) => {
+    const def = LINK_ICONS.find((d) => d.id === icon);
+    if (!def || !url) return [];
+    return [`  [[params.links]]\n    name = ${str(def.name)}\n    url = ${str(url)}\n    icon = ${str(def.icon)}\n`];
+  }).join('');
 }
 
-// http(s) の URL として受け付ける形か
-export function validateHttpUrl(url: string): boolean {
+// リンクとして受け付ける URL か（http(s) と mailto）
+export function validateLinkUrl(url: string): boolean {
   try {
-    return ['http:', 'https:'].includes(new URL(url).protocol);
+    return ['http:', 'https:', 'mailto:'].includes(new URL(url).protocol);
   } catch {
     return false;
   }

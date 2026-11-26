@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateHttpUrl, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
+  import { pagesBaseURL, cloudflarePagesBaseURL, gitlabPagesBaseURL, GITLAB_COM, validateCustomDomain, validateGitLabProjectPath, validateLinkUrl, LINK_ICONS, type ProfileLink, validateRepoName, type BlogConfig, type DeploymentProvider, type Owner, type RepoRef, type ThemeName } from '@blogit/core';
   import type { CloudflareAccount } from './lib/cloudflare';
   import { loadDraft, saveDraft } from './lib/draft';
 
@@ -47,13 +47,13 @@
   let isPrivate = $state(pick('isPrivate', false));
   let customDomain = $state(pick('customDomain', ''));
   let bio = $state(pick('bio', ''));
-  let linkWebsite = $state(pick('linkWebsite', ''));
-  let linkGithub = $state(pick('linkGithub', ''));
-  let linkX = $state(pick('linkX', ''));
+  let links = $state<ProfileLink[]>(Array.isArray(draft.links)
+    ? (draft.links as ProfileLink[]).filter((l) => LINK_ICONS.some((d) => d.id === l?.icon) && typeof l.url === 'string')
+    : []);
   let sidebar = $state(pick('sidebar', true));
   let pagerSize = $state(pick('pagerSize', 10));
   $effect(() => {
-    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, linkWebsite, linkGithub, linkX, sidebar, pagerSize });
+    saveDraft({ owner, repo, title, description, author, theme, language, isPrivate, customDomain, bio, links, sidebar, pagerSize });
   });
   // 同じ作成先に、途中まで作成したリポジトリがあるとき
   let resumable = $state(false);
@@ -83,8 +83,12 @@
     : !repoValid ? ''
     : isGitLab ? (gitlabUrl === GITLAB_COM ? gitlabPagesBaseURL(owner, repo) : '')
     : pagesBaseURL(owner, repo, userSiteOrigins[owner]));
-  const links = $derived({ website: linkWebsite.trim(), github: linkGithub.trim(), x: linkX.trim() });
-  const linksValid = $derived(Object.values(links).every((u) => !u || validateHttpUrl(u)));
+  const linksValid = $derived(links.every((l) => !l.url.trim() || validateLinkUrl(l.url.trim())));
+  // まだ追加していない種類のアイコンを、次のリンクの既定にする
+  function addLink() {
+    const icon = LINK_ICONS.find((d) => !links.some((l) => l.icon === d.id))?.id ?? 'website';
+    links.push({ icon, url: '' });
+  }
   const pagerSizeValid = $derived(Number.isInteger(pagerSize) && pagerSize >= 1 && pagerSize <= 100);
   $effect(() => {
     // 作成先を変えたら、再開の確認を取り消す
@@ -126,7 +130,7 @@
         return;
       }
       const ownerType = owners.find((o) => o.login === owner)!.type;
-      const linkValues = Object.fromEntries(Object.entries(links).filter(([, u]) => u));
+      const linkValues = links.map((l) => ({ icon: l.icon, url: l.url.trim() })).filter((l) => l.url);
       onSubmit({
         title: title.trim(), description: description.trim(), author: author.trim() || owner,
         owner, ownerType, repo, provider: selectedProvider,
@@ -135,7 +139,7 @@
         ...(useCustomDomain && domain ? { customDomain: domain } : {}),
         theme, language, private: isPrivate,
         ...(bio.trim() ? { bio: bio.trim() } : {}),
-        ...(Object.keys(linkValues).length ? { links: linkValues } : {}),
+        ...(linkValues.length ? { links: linkValues } : {}),
         ...(sidebar ? {} : { sidebar: false }),
         ...(pagerSize !== 10 ? { pagerSize } : {}),
       });
@@ -234,29 +238,32 @@
     </div>
   </section>
 
-  <section class="card stack">
-    <h2 class="section-title">見た目</h2>
-    <fieldset class="field">
-      <legend>テーマ</legend>
-      <div class="choices">
-        {#each themes as t (t.name)}
-          <label class="choice">
-            <input type="radio" name="theme" value={t.name} bind:group={theme} />
-            <span class="choice-name">{t.label}</span>
-            <span class="hint">{t.note}</span>
-          </label>
-        {/each}
+  <!-- 見た目は最初は開いておき、選び終えたら閉じられるようにする -->
+  <details class="card" open>
+    <summary>見た目</summary>
+    <div class="stack" style="margin-top: 1rem">
+      <fieldset class="field">
+        <legend>テーマ</legend>
+        <div class="choices">
+          {#each themes as t (t.name)}
+            <label class="choice">
+              <input type="radio" name="theme" value={t.name} bind:group={theme} />
+              <span class="choice-name">{t.label}</span>
+              <span class="hint">{t.note}</span>
+            </label>
+          {/each}
+        </div>
+      </fieldset>
+      <div class="preview">
+        <div class="tabs" role="tablist" aria-label="プレビュー">
+          {#each views as v (v.id)}
+            <button type="button" role="tab" class="tab" aria-selected={view === v.id} onclick={() => (view = v.id)}>{v.label}</button>
+          {/each}
+        </div>
+        <img class="preview-image" src={shot(theme, view)} alt="{theme} テーマのプレビュー" />
       </div>
-    </fieldset>
-    <div class="preview">
-      <div class="tabs" role="tablist" aria-label="プレビュー">
-        {#each views as v (v.id)}
-          <button type="button" role="tab" class="tab" aria-selected={view === v.id} onclick={() => (view = v.id)}>{v.label}</button>
-        {/each}
-      </div>
-      <img class="preview-image" src={shot(theme, view)} alt="{theme} テーマのプレビュー" />
     </div>
-  </section>
+  </details>
 
   <!-- 既定値のままでよい項目は折りたたむ -->
   <details class="card">
@@ -277,10 +284,24 @@
       </div>
       <fieldset class="field">
         <legend>サイドバーのリンク</legend>
-        <input type="url" bind:value={linkWebsite} placeholder="Webサイト（https://example.jp）" aria-label="WebサイトのURL" />
-        <input type="url" bind:value={linkGithub} placeholder="GitHub（https://github.com/example）" aria-label="GitHubのURL" />
-        <input type="url" bind:value={linkX} placeholder="X（https://x.com/example）" aria-label="XのURL" />
-        {#if !linksValid}<p class="error-text">URLは https:// から入力してください。</p>{/if}
+        {#each links as link, i}
+          <div class="link-row">
+            <i class={LINK_ICONS.find((d) => d.id === link.icon)?.icon} aria-hidden="true"></i>
+            <select bind:value={link.icon} aria-label="リンクの種類">
+              {#each LINK_ICONS as d (d.id)}<option value={d.id}>{d.name}</option>{/each}
+            </select>
+            <input type="url" bind:value={link.url} placeholder={link.icon === 'mail' ? 'mailto:info@example.jp' : 'https://'} aria-label="URL" />
+            <button class="icon-button" type="button" onclick={() => links.splice(i, 1)} aria-label="リンクを削除" title="リンクを削除">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+        {/each}
+        {#if !linksValid}<p class="error-text">URLは https:// または mailto: から入力してください。</p>{/if}
+        <div class="actions">
+          <button class="button secondary" type="button" onclick={addLink}>
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> リンクを追加
+          </button>
+        </div>
       </fieldset>
       <label class="checkbox">
         <input type="checkbox" bind:checked={sidebar} />
@@ -291,13 +312,13 @@
         <input id="pager-size" type="number" min="1" max="100" bind:value={pagerSize} style="width: 8rem" />
         {#if !pagerSizeValid}<p class="error-text">1から100までの数を入力してください。</p>{/if}
       </div>
-      <fieldset class="field">
-        <legend>言語</legend>
-        <div class="choices">
-          <label class="choice"><input type="radio" name="language" value="ja" bind:group={language} /><span class="choice-name">日本語</span></label>
-          <label class="choice"><input type="radio" name="language" value="en" bind:group={language} /><span class="choice-name">English</span></label>
-        </div>
-      </fieldset>
+      <div class="field">
+        <label for="language">言語</label>
+        <select id="language" bind:value={language} style="width: auto; justify-self: start">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+        </select>
+      </div>
       {#if useCustomDomain}
         <div class="field">
           <label for="custom-domain">独自ドメイン（任意）</label>
