@@ -5,7 +5,7 @@
 <Page title="About">
   <section>
     <h2>Blogitとは</h2>
-    <p>Blogitは、GitHubまたはGitLabのアカウントでHugoのブログを作成するサービスです。ブログ名、テーマ、公開先を選択すると、リポジトリの作成から公開までを自動で行います。</p>
+    <p>Blogitは、GitHubまたはGitLabのアカウントでHugoのブログを構築するツールです。ブログ名、テーマ、公開先を選択すると、リポジトリの作成から公開までを自動で行います。</p>
   </section>
 
   <section>
