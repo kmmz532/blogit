@@ -5,6 +5,11 @@ import { validateLinkUrl, validateThemeModule, normalizeThemeModule, parseHugoTh
 import { validateRepoName } from './setup.ts';
 import type { BlogConfig } from './types.ts';
 
+// 生成するファイルのうち、テキストのものだけを文字列で返す（画像などのバイナリは除く）
+function textFiles(...args: Parameters<typeof siteFiles>): Record<string, string> {
+  return Object.fromEntries(Object.entries(siteFiles(...args)).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
+}
+
 const config: BlogConfig = {
   title: 'テスト "ブログ"',
   description: '説明',
@@ -33,7 +38,7 @@ test('hugoToml: escapes strings and imports the chosen theme', () => {
 });
 
 test('siteFiles: includes workflow and a first post, and uses the given baseURL', () => {
-  const files = siteFiles(config, { now: new Date('2026-11-25T00:00:00Z'), baseURL: 'https://kmmz.jp/my-blog/' });
+  const files = textFiles(config, { now: new Date('2026-11-25T00:00:00Z'), baseURL: 'https://kmmz.jp/my-blog/' });
   assert.ok(files['.github/workflows/deploy.yml'].includes('${{ steps.deployment.outputs.page_url }}'));
   assert.ok(files['.github/workflows/deploy.yml'].includes('--baseURL "${{ steps.pages.outputs.base_url }}/"'));
   assert.ok(!files['.github/workflows/deploy.yml'].includes('hugo_cache}'));
@@ -56,7 +61,7 @@ test('gitlabPagesBaseURL: user page, project page and subgroup', () => {
 });
 
 test('siteFiles: GitLab Pages uses .gitlab-ci.yml and CI_PAGES_URL', () => {
-  const files = siteFiles(gitlab, { now: new Date('2026-11-25T00:00:00Z') });
+  const files = textFiles(gitlab, { now: new Date('2026-11-25T00:00:00Z') });
   assert.ok(!('.github/workflows/deploy.yml' in files));
   assert.match(files['.gitlab-ci.yml'], /^pages:$/m);
   assert.match(files['.gitlab-ci.yml'], /--baseURL "\$\{CI_PAGES_URL\}\/"/);
@@ -71,13 +76,13 @@ test('siteFiles: GitLab Pages uses .gitlab-ci.yml and CI_PAGES_URL', () => {
 });
 
 test('siteFiles: self-hosted GitLab uses its host and a relative baseURL', () => {
-  const files = siteFiles({ ...gitlab, gitlabUrl: 'git.example.com/' });
+  const files = textFiles({ ...gitlab, gitlabUrl: 'git.example.com/' });
   assert.match(files['hugo.toml'], /^baseURL = "\/"$/m);
   assert.match(files['go.mod'], /^module git\.example\.com\//m);
 });
 
 test('siteFiles: GitLab repository published to Cloudflare Pages', () => {
-  const files = siteFiles({ ...gitlab, provider: 'cloudflare-pages' });
+  const files = textFiles({ ...gitlab, provider: 'cloudflare-pages' });
   assert.ok(!('.gitlab-ci.yml' in files));
   assert.ok(!('.github/workflows/deploy.yml' in files));
   assert.match(files['hugo.toml'], /^baseURL = "https:\/\/my-blog\.pages\.dev\/"$/m);
@@ -86,7 +91,7 @@ test('siteFiles: GitLab repository published to Cloudflare Pages', () => {
 });
 
 test('siteFiles: uses the repository default branch', () => {
-  const files = siteFiles(config, { branch: 'master' });
+  const files = textFiles(config, { branch: 'master' });
   assert.match(files['hugo.toml'], /^  branch = "master"$/m);
   assert.match(files['hugo.toml'], /^  siteBranch = "master"$/m);
   assert.match(files['.github/workflows/deploy.yml'], /branches: \["master"\]/);
@@ -115,7 +120,7 @@ test('validateCustomDomain', () => {
 });
 
 test('siteFiles: GitHub Pages with a custom domain uses it as baseURL', () => {
-  const files = siteFiles({ ...config, customDomain: 'Blog.Example.jp' });
+  const files = textFiles({ ...config, customDomain: 'Blog.Example.jp' });
   assert.match(files['hugo.toml'], /^baseURL = "https:\/\/blog\.example\.jp\/"$/m);
 });
 
@@ -179,7 +184,7 @@ test('siteFiles: adds the uploaded favicon and default thumbnail as binary files
   assert.match(toml, /icon = "\/favicon\.png"/);
   assert.match(toml, /appleIcon = "\/favicon\.png"/);
   assert.match(toml, /defaultThumbnail = "\/default-thumbnail\.jpg"/);
-  const plain = siteFiles(config)['hugo.toml'] as string;
+  const plain = textFiles(config)['hugo.toml'];
   assert.doesNotMatch(plain, /icon =/);
   assert.match(plain, /defaultThumbnail = "\/blogit\/default-thumbnail\.svg"/);
 });
@@ -220,21 +225,21 @@ test('validateThemeModule', () => {
 
 test('siteFiles: an external theme imports the theme and hugo-gh-admin and injects the admin button', () => {
   const external: BlogConfig = { ...config, externalTheme: 'github.com/owner/hugo-theme', themeVersion: 'v0.0.0-20261126000000-0123456789ab', bio: 'bio', sidebar: false, defaultThumbnail: { ext: 'png', base64: 'AA==' } };
-  const files = siteFiles(external);
-  const toml = files['hugo.toml'] as string;
+  const files = textFiles(external);
+  const toml = files['hugo.toml'];
   assert.match(toml, /path = "github.com\/owner\/hugo-theme"\n[\s\S]*path = "github.com\/kmmz532\/hugo-gh-admin"/);
   assert.doesNotMatch(toml, /blogit\/themes|defaultThumbnail|bio =|sidebar =|\[outputs\]/);
   assert.equal(goMod(external).includes('require'), false);
-  assert.ok(!('static/default-thumbnail.png' in files));
-  assert.match(files[FLOAT_SCRIPT] as string, /gh-admin\/js\/float\.js/);
-  assert.ok((files['.github/workflows/deploy.yml'] as string).includes(`sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"`));
-  const gitlab = siteFiles({ ...external, provider: 'gitlab-pages' });
-  assert.ok((gitlab['.gitlab-ci.yml'] as string).includes(`sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"`));
+  assert.ok(!('static/default-thumbnail.png' in siteFiles(external)));
+  assert.match(files[FLOAT_SCRIPT], /gh-admin\/js\/float\.js/);
+  assert.ok(files['.github/workflows/deploy.yml'].includes(`sh ${FLOAT_SCRIPT} "\${{ steps.pages.outputs.base_url }}/"`));
+  const gitlab = textFiles({ ...external, provider: 'gitlab-pages' });
+  assert.ok(gitlab['.gitlab-ci.yml'].includes(`sh ${FLOAT_SCRIPT} "\${CI_PAGES_URL}/"`));
   assert.equal(cloudflareBuildCommand(), `hugo --minify --gc && sh ${FLOAT_SCRIPT}`);
 });
 
 test('siteFiles: a Blogit theme also gets the injection step so that the theme can be switched later', () => {
-  const files = siteFiles(config);
+  const files = textFiles(config);
   assert.ok(FLOAT_SCRIPT in files);
-  assert.ok((files['.github/workflows/deploy.yml'] as string).includes(`sh ${FLOAT_SCRIPT}`));
+  assert.ok(files['.github/workflows/deploy.yml'].includes(`sh ${FLOAT_SCRIPT}`));
 });
