@@ -99,7 +99,7 @@
       }
       const ownerType = owners.find((o) => o.login === owner)!.type;
       onSubmit({
-        title: title.trim(), description: description.trim(), author: author.trim(),
+        title: title.trim(), description: description.trim(), author: author.trim() || owner,
         owner, ownerType, repo, provider: selectedProvider,
         ...(selectedProvider === 'cloudflare-pages' ? { cloudflareAccountId: selectedCloudflareAccountId } : {}),
         ...(isGitLab ? { gitlabUrl } : {}),
@@ -179,18 +179,6 @@
       <input id="title" type="text" bind:value={title} required />
     </div>
     <div class="field">
-      <label for="description">説明</label>
-      <input id="description" type="text" bind:value={description} />
-    </div>
-    <div class="field">
-      <label for="author">著者名</label>
-      <input id="author" type="text" bind:value={author} required />
-    </div>
-  </section>
-
-  <section class="card stack">
-    <h2 class="section-title">リポジトリと公開URL</h2>
-    <div class="field">
       <label for="repo">作成先</label>
       <div class="repo-input">
         <select id="owner" bind:value={owner} aria-label="アカウント" style="width: auto">
@@ -209,27 +197,6 @@
         <p class="hint">公開URLは初回の公開時に決まります。</p>
       {:else}
         <p class="error-text">英数字、ハイフン、アンダースコア、ピリオドのみ使用できます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
-      {/if}
-      {#if useCustomDomain}
-        <div class="field">
-          <label for="custom-domain">独自ドメイン（任意）</label>
-          <input id="custom-domain" type="text" bind:value={customDomain} placeholder="blog.example.jp" autocomplete="off" spellcheck="false" />
-          {#if !domainValid}
-            <p class="error-text">ドメイン名のみを入力してください。</p>
-          {:else if domain}
-            <p class="hint">DNSで <code>{domain}</code> のCNAMEレコードを <code>{owner.toLowerCase()}.github.io</code> に設定してください（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">設定方法</a>）</p>
-          {/if}
-        </div>
-      {/if}
-      <label class="checkbox">
-        <input type="checkbox" bind:checked={isPrivate} />
-        {isGitLab ? 'プロジェクト' : 'リポジトリ'}を非公開で作成する
-      </label>
-      {#if isPrivate}
-        <p class="hint">
-          {#if selectedProvider === 'github-pages'}非公開リポジトリでGitHub Pagesを利用するには、有料プランが必要です。{/if}
-          公開前の画像は、管理画面でプレビューできません。
-        </p>
       {/if}
     </div>
   </section>
@@ -256,14 +223,50 @@
       </div>
       <img class="preview-image" src={shot(theme, view)} alt="{theme} テーマのプレビュー" />
     </div>
-    <fieldset class="field">
-      <legend>言語</legend>
-      <div class="choices">
-        <label class="choice"><input type="radio" name="language" value="ja" bind:group={language} /><span class="choice-name">日本語</span></label>
-        <label class="choice"><input type="radio" name="language" value="en" bind:group={language} /><span class="choice-name">English</span></label>
-      </div>
-    </fieldset>
   </section>
+
+  <!-- 既定値のままでよい項目は折りたたむ -->
+  <details class="card">
+    <summary>高度な設定</summary>
+    <div class="stack" style="margin-top: 1rem">
+      <div class="field">
+        <label for="description">説明</label>
+        <input id="description" type="text" bind:value={description} />
+      </div>
+      <div class="field">
+        <label for="author">著者名</label>
+        <input id="author" type="text" bind:value={author} placeholder={owner} />
+      </div>
+      <fieldset class="field">
+        <legend>言語</legend>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="language" value="ja" bind:group={language} /><span class="choice-name">日本語</span></label>
+          <label class="choice"><input type="radio" name="language" value="en" bind:group={language} /><span class="choice-name">English</span></label>
+        </div>
+      </fieldset>
+      {#if useCustomDomain}
+        <div class="field">
+          <label for="custom-domain">独自ドメイン（任意）</label>
+          <input id="custom-domain" type="text" bind:value={customDomain} placeholder="blog.example.jp" autocomplete="off" spellcheck="false" />
+          {#if !domainValid}
+            <p class="error-text">ドメイン名のみを入力してください。</p>
+          {:else if domain}
+            <p class="hint">DNSで <code>{domain}</code> のCNAMEレコードを <code>{owner.toLowerCase()}.github.io</code> に設定してください（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">設定方法</a>）</p>
+          {/if}
+        </div>
+      {/if}
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={isPrivate} />
+        {isGitLab ? 'プロジェクト' : 'リポジトリ'}を非公開で作成する
+      </label>
+      {#if isPrivate}
+        <p class="hint">
+          {#if selectedProvider === 'github-pages'}非公開リポジトリでGitHub Pagesを利用するには、有料プランが必要です。{/if}
+          公開前の画像は、管理画面でプレビューできません。
+        </p>
+      {/if}
+    </div>
+  </details>
 
   {#if error}<p class="error-text">{error}</p>{/if}
   <div class="actions">

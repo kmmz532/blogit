@@ -17,8 +17,8 @@
       <li>GitHub Actionsなどがサイトをビルドし、公開する</li>
     </ol>
     <figure class="shot">
-      <img class="shot-light" src="./screens/setup-light.png" alt="ブログの作成画面" width="760" height="720" loading="lazy" />
-      <img class="shot-dark" src="./screens/setup-dark.png" alt="ブログの作成画面" width="760" height="720" loading="lazy" />
+      <img class="shot-light" src="./screens/setup-light.png" alt="ブログの作成画面" width="760" height="640" loading="lazy" />
+      <img class="shot-dark" src="./screens/setup-dark.png" alt="ブログの作成画面" width="760" height="640" loading="lazy" />
       <figcaption class="hint">ブログの作成画面</figcaption>
     </figure>
   </section>
