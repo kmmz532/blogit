@@ -92,10 +92,19 @@
           });
         }
         const url = project.subdomain ? `https://${project.subdomain}/` : `https://${projectName}.pages.dev/`;
+        // Git連携を設定する前に push 済みのコミットは webhook の対象外なので、
+        // 最新コミットのデプロイがまだなければ Pages API から明示的に初回ビルドを開始する。
+        let deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
+        let deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha);
+        if (!deployment) {
+          deployment = await cf.createDeployment(config.cloudflareAccountId, projectName, details.defaultBranch, commitSha);
+          runUrl = deployment.url;
+        }
+
         const deadline = Date.now() + 10 * 60 * 1000;
         while (Date.now() < deadline) {
-          const deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
-          const deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha);
+          deployments = await cf.listDeployments(config.cloudflareAccountId, projectName);
+          deployment = deployments.find((item) => item.deployment_trigger?.metadata?.commit_hash === commitSha) ?? deployment;
           if (deployment) {
             runUrl = deployment.url;
             const stage = deployment.latest_stage;
