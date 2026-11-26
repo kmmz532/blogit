@@ -13,7 +13,7 @@
 
   const labels: Record<StepId, string> = {
     'create-repo': onGitLab ? 'プロジェクトを作成' : 'リポジトリを作成',
-    'enable-pages': isGitLab ? 'GitLab Pages の公開設定' : config.provider === 'cloudflare-pages' ? 'リポジトリの情報を取得' : 'GitHub Pages を有効化',
+    'enable-pages': isGitLab ? 'GitLab Pagesの公開設定' : config.provider === 'cloudflare-pages' ? 'リポジトリの情報を取得' : 'GitHub Pagesを有効化',
     'push-site': 'ブログのファイルを追加',
     'wait-deploy': '初回のビルドと公開（数分かかります）',
   };
@@ -45,20 +45,20 @@
     };
     try {
       if (isGitLab) {
-        if (!glClient) throw new Error('GitLab にログインしていません。');
+        if (!glClient) throw new Error('GitLabにログインしていません。');
         await runGitLabSetup(glClient, config, setupState, (id, s, e) => {
           status[id] = s;
           runUrl = setupState.runUrl ?? '';
           if (e) {
             error = e instanceof Error ? e.message : String(e);
-            if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。スコープ api を付けたトークンを入れ直してください）';
+            if (/: 40[34] /.test(error)) error += '（トークンの権限が不足している可能性があります。スコープ api を付けたトークンを再入力してください）';
           }
         });
         siteUrl = setupState.siteUrl ?? '';
       } else if (config.provider === 'cloudflare-pages') {
         // GitHubClient と GitLabClient は、ここで使うメソッドの形が同じ
         const repoClient = onGitLab ? glClient : client;
-        if (!repoClient) throw new Error(onGitLab ? 'GitLab にログインしていません。' : 'GitHub にログインしていません。');
+        if (!repoClient) throw new Error(onGitLab ? 'GitLabにログインしていません。' : 'GitHubにログインしていません。');
         const token = loadCloudflareToken();
         if (!token) throw new Error('Cloudflareに接続されていません。入力画面に戻って接続してください。');
         if (!config.cloudflareAccountId) throw new Error('Cloudflareアカウントが選択されていません。');
@@ -122,14 +122,14 @@
         if (!siteUrl) throw new Error(`Cloudflare Pages deployment timed out: ${runUrl}`);
         report('wait-deploy', 'done');
       } else {
-        if (!client) throw new Error('GitHub にログインしていません。');
+        if (!client) throw new Error('GitHubにログインしていません。');
         await runSetup(client, config, setupState, (id, s, e) => {
           status[id] = s;
           runUrl = setupState.runUrl ?? '';
           if (e) {
             error = e instanceof Error ? e.message : String(e);
-            if (/: 40[34] /.test(error)) error += '（トークンの権限が足りない可能性があります。下で権限を確認して入れ直してください）';
-            else if (id === 'enable-pages' && config.private && /: 422 /.test(error)) error += '（非公開リポジトリで GitHub Pages を使うには、GitHub の有料プランが必要です）';
+            if (/: 40[34] /.test(error)) error += '（トークンの権限が不足している可能性があります。権限を確認し、トークンを再入力してください）';
+            else if (id === 'enable-pages' && config.private && /: 422 /.test(error)) error += '（非公開リポジトリでGitHub Pagesを利用するには、GitHubの有料プランが必要です）';
           }
         });
         siteUrl = setupState.siteUrl ?? '';
@@ -168,7 +168,7 @@
         <div>
           <div>{labels[s.id]}</div>
           {#if s.id === 'wait-deploy' && runUrl}
-            <a class="hint" href={runUrl} target="_blank" rel="noopener">{config.provider === 'cloudflare-pages' ? 'Cloudflare Pages のデプロイを見る' : isGitLab ? 'パイプラインのログを見る' : 'Actions のログを見る'}</a>
+            <a class="hint" href={runUrl} target="_blank" rel="noopener">{config.provider === 'cloudflare-pages' ? 'Cloudflare Pagesのデプロイを見る' : isGitLab ? 'パイプラインのログを見る' : 'Actionsのログを見る'}</a>
           {/if}
         </div>
       </li>

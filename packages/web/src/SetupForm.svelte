@@ -86,7 +86,7 @@
     error = '';
     try {
       if (selectedProvider === 'cloudflare-pages' && !cloudflareRepoValid) {
-        error = 'Cloudflare Pages のプロジェクト名には小文字英数字とハイフンだけを使えます。';
+        error = 'Cloudflare Pagesのプロジェクト名は小文字英数字とハイフンのみ使用できます。';
         return;
       }
       if (selectedProvider === 'cloudflare-pages' && (!cloudflareConnected || !selectedCloudflareAccountId)) {
@@ -94,7 +94,7 @@
         return;
       }
       if (await client.repoExists({ owner, repo })) {
-        error = `${owner}/${repo} はすでにあります。別の名前にしてください。`;
+        error = `${owner}/${repo} はすでに存在します。別の名前を入力してください。`;
         return;
       }
       const ownerType = owners.find((o) => o.login === owner)!.type;
@@ -114,7 +114,7 @@
   }
 </script>
 
-<h1 class="page-title">ブログを作る</h1>
+<h1 class="page-title">ブログを作成する</h1>
 
 <form class="stack" onsubmit={submit}>
   <section class="card stack">
@@ -149,7 +149,7 @@
         {#if cloudflareConnected}
           {#if cloudflareAccounts.length > 0}
             <div class="field">
-              <label for="cloudflare-account">Cloudflare アカウント</label>
+              <label for="cloudflare-account">Cloudflareアカウント</label>
               <select id="cloudflare-account" value={selectedCloudflareAccountId} onchange={(event) => onSelectCloudflareAccount((event.currentTarget as HTMLSelectElement).value)}>
                 {#each cloudflareAccounts as account (account.id)}
                   <option value={account.id}>{account.name}</option>
@@ -162,7 +162,7 @@
         {:else}
           <div class="actions">
             <button class="button" type="button" onclick={connect} disabled={connecting}>
-              {connecting ? '接続中…' : 'Cloudflare と接続'}
+              {connecting ? '接続中…' : 'Cloudflareと接続'}
             </button>
           </div>
         {/if}
@@ -189,7 +189,7 @@
   </section>
 
   <section class="card stack">
-    <h2 class="section-title">リポジトリと公開 URL</h2>
+    <h2 class="section-title">リポジトリと公開URL</h2>
     <div class="field">
       <label for="repo">作成先</label>
       <div class="repo-input">
@@ -202,11 +202,11 @@
         <input id="repo" type="text" bind:value={repo} required />
       </div>
       {#if url}
-        <p class="hint">公開 URL: {url}</p>
+        <p class="hint">公開URL: {url}</p>
       {:else if selectedProvider === 'cloudflare-pages'}
-        <p class="error-text">Cloudflare Pages のプロジェクト名は小文字英数字とハイフンのみ使用できます。</p>
+        <p class="error-text">Cloudflare Pagesのプロジェクト名は小文字英数字とハイフンのみ使用できます。</p>
       {:else if repoValid}
-        <p class="hint">公開 URL は初回の公開時に決まります。</p>
+        <p class="hint">公開URLは初回の公開時に決まります。</p>
       {:else}
         <p class="error-text">英数字・ハイフン・アンダースコア・ピリオドのみ使用できます{isGitLab ? '（先頭は英数字、末尾に .git は不可）' : ''}。</p>
       {/if}
