@@ -16,7 +16,7 @@
     </ul>
     <h3>運営者が閲覧できる情報</h3>
     <ul>
-      <li><strong>アクセスログ</strong>: Webページの配信元と認証用サーバー（第3項）に記録される、IPアドレス、アクセス日時、アクセス先のURLなど。</li>
+      <li><strong>アクセスログ</strong>: Webページの配信元と認証用サーバー（第3項）に記録される、IPアドレス、アクセス日時、アクセスしたURLなど。</li>
     </ul>
   </section>
 
@@ -51,7 +51,7 @@
   </section>
 
   <section>
-    <h2>お問い合わせ</h2>
-    <p><a href="mailto:contact@kmmz.jp">contact@kmmz.jp</a></p>
+    <h2>運営者・お問い合わせ</h2>
+    <p>上中野 瑞人（<a href="https://kmmz.jp" target="_blank" rel="noopener">kmmz.jp</a>）<br /><a href="mailto:contact@kmmz.jp">contact@kmmz.jp</a></p>
   </section>
 </Page>

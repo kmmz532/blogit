@@ -42,6 +42,11 @@
     <p>ソースコードは <a href="https://github.com/kmmz532/blogit" target="_blank" rel="noopener">GitHub</a> で公開しています（MIT License）。</p>
   </section>
 
+  <section>
+    <h2>開発者</h2>
+    <p>上中野 瑞人（Mizuto, Kaminakano） - <a href="https://kmmz.jp" target="_blank" rel="noopener">kmmz.jp</a></p>
+  </section>
+
   <div class="actions">
     <a class="button" href="./">ブログを作成する</a>
   </div>

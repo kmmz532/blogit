@@ -53,7 +53,7 @@
   </section>
 
   <section>
-    <h2>お問い合わせ</h2>
-    <p><a href="mailto:contact@kmmz.jp">contact@kmmz.jp</a></p>
+    <h2>運営者・お問い合わせ</h2>
+    <p>上中野 瑞人（<a href="https://kmmz.jp" target="_blank" rel="noopener">kmmz.jp</a>）<br /><a href="mailto:contact@kmmz.jp">contact@kmmz.jp</a></p>
   </section>
 </Page>
