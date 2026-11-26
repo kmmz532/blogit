@@ -1,0 +1,5 @@
+{{- /* サイドバーの検索欄。サイトの layouts/partials/sidebar-search.html で上書きできる */ -}}
+<form class="search-box" action="{{ with site.GetPage "/search" }}{{ .RelPermalink }}{{ else }}{{ "search/" | relURL }}{{ end }}" method="get" role="search">
+  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+  <input type="search" name="q" aria-label="{{ T "search_keyword" }}" placeholder="{{ T "search" }}">
+</form>

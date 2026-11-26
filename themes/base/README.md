@@ -35,6 +35,8 @@ Blogit の各テーマ（default / warm / cool）が共通で使う HTML・CSS�
 | `cfAnalyticsToken` | Cloudflare Web Analytics（任意） |
 | `ogLocale` | og:locale。未設定なら言語から決める |
 | `sidebar` | `false` でサイドバーを消して 1 カラムにする |
+| `dateFormat` | 日付の表示形式（Goの書式）。未設定なら `2006.01.02` |
 
 画面の文言は `i18n/ja.toml`・`i18n/en.toml`。サイト側に同じキーを書けば上書きできる。
-レイアウトはサイト側に同じパスのファイルを置けば上書きできる。
+レイアウトはサイト側に同じパスのファイルを置けば上書きできる。サイドバーの検索欄は `partials/sidebar-search.html` に分けてあり、この部品だけを上書きできる。
+検索とアーカイブへのリンクは、`search`・`archives` のページの URL を参照する。サイト側の `content/search.md`・`content/archives.md` で `url` を変えれば、リンクも変わる。
