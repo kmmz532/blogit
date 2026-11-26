@@ -77,10 +77,14 @@
 {{- $parts := slice (resources.Get "css/base.css") (resources.Get "css/layout.css") (resources.Get "css/list.css") (resources.Get "css/post.css") (resources.Get "gh-admin/editor.css") (resources.Get "css/syntax.css") -}}
 {{- /* テーマの見た目の差分（色・フォント・装飾）。base の CSS の後に読む */ -}}
 {{- with resources.Get "css/theme.css" }}{{ $parts = $parts | append . }}{{ end -}}
+{{- /* サイト独自の CSS。テーマの CSS の後に読むため、テーマを置き換えずに一部だけを変えられる */ -}}
+{{- with resources.Get "css/custom.css" }}{{ $parts = $parts | append . }}{{ end -}}
 {{- $main := resources.Concat "css/main.css" $parts | minify | fingerprint }}
 <link rel="stylesheet" href="{{ $main.RelPermalink }}" integrity="{{ $main.Data.Integrity }}">
 {{- /* 管理画面の部品（meta・CSS・admin.js）。CSS は本体の bundle の後に読む */}}
 {{ partial "gh-admin/head.html" . }}
+{{- /* サイト独自の head の追加（解析タグ・フォントなど）。サイトの layouts/partials/custom/head.html に書く */}}
+{{- if templates.Exists "partials/custom/head.html" }}{{ partial "custom/head.html" . }}{{ end }}
 {{- with $cfToken }}
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{{ dict "token" . | jsonify }}'></script>
 {{- end }}
