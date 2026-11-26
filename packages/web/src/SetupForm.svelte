@@ -217,7 +217,7 @@
           {#if !domainValid}
             <p class="error-text">ドメイン名のみを入力してください。</p>
           {:else if domain}
-            <p class="hint">DNSで <code>{domain}</code> のCNAMEレコードを <code>{owner.toLowerCase()}.github.io</code> に設定してください（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">設定方法</a>）。</p>
+            <p class="hint">DNSで <code>{domain}</code> のCNAMEレコードを <code>{owner.toLowerCase()}.github.io</code> に設定してください（<a href="https://docs.github.com/ja/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener">設定方法</a>）</p>
           {/if}
         </div>
       {/if}

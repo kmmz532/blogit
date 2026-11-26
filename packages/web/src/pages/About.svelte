@@ -39,7 +39,7 @@
 
   <section>
     <h2>ソースコード</h2>
-    <p>ソースコードは <a href="https://github.com/kmmz532/blogit" target="_blank" rel="noopener">GitHub</a> で公開しています（MIT License）。</p>
+    <p>ソースコードは<a href="https://github.com/kmmz532/blogit" target="_blank" rel="noopener">GitHub</a>で公開しています（MIT License）</p>
   </section>
 
   <div class="actions">
