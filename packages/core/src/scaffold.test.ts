@@ -72,6 +72,15 @@ test('siteFiles: self-hosted GitLab uses its host and a relative baseURL', () =>
   assert.match(files['go.mod'], /^module git\.example\.com\//m);
 });
 
+test('siteFiles: GitLab repository published to Cloudflare Pages', () => {
+  const files = siteFiles({ ...gitlab, provider: 'cloudflare-pages' });
+  assert.ok(!('.gitlab-ci.yml' in files));
+  assert.ok(!('.github/workflows/deploy.yml' in files));
+  assert.match(files['hugo.toml'], /^baseURL = "https:\/\/my-blog\.pages\.dev\/"$/m);
+  assert.match(files['hugo.toml'], /^  provider = "gitlab"$/m);
+  assert.match(files['go.mod'], /^module gitlab\.com\//m);
+});
+
 test('normalizeGitLabUrl', () => {
   assert.equal(normalizeGitLabUrl('gitlab.com'), 'https://gitlab.com');
   assert.equal(normalizeGitLabUrl('https://git.example.com/gitlab/'), 'https://git.example.com/gitlab');

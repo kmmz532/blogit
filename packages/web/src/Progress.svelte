@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GitHubClient, GitLabClient, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
+  import { GitHubClient, GitLabClient, isGitLabRepo, runGitLabSetup, runSetup, steps, siteFiles, cloudflarePagesBaseURL, type BlogConfig, type SetupState, type StepId, type StepStatus } from '@blogit/core';
   import { CloudflareClient, loadCloudflareToken } from './lib/cloudflare';
   import { onMount } from 'svelte';
   import { saveToken } from './lib/auth';
@@ -7,11 +7,13 @@
   import TokenHelp from './TokenHelp.svelte';
 
   let { gh = null, gl = null, config, onBack }: { gh?: GitHubClient | null; gl?: GitLabClient | null; config: BlogConfig; onBack: () => void } = $props();
+  // isGitLab: GitLab Pages に公開する。onGitLab: リポジトリが GitLab にある（Cloudflare Pages の場合も含む）
   const isGitLab = config.provider === 'gitlab-pages';
+  const onGitLab = isGitLabRepo(config);
 
   const labels: Record<StepId, string> = {
-    'create-repo': isGitLab ? 'プロジェクトを作成' : 'リポジトリを作成',
-    'enable-pages': isGitLab ? 'GitLab Pages の公開設定' : 'GitHub Pages を有効化',
+    'create-repo': onGitLab ? 'プロジェクトを作成' : 'リポジトリを作成',
+    'enable-pages': isGitLab ? 'GitLab Pages の公開設定' : config.provider === 'cloudflare-pages' ? 'リポジトリの情報を取得' : 'GitHub Pages を有効化',
     'push-site': 'ブログのファイルを追加',
     'wait-deploy': '初回のビルドと公開（数分かかります）',
   };
@@ -54,7 +56,9 @@
         });
         siteUrl = setupState.siteUrl ?? '';
       } else if (config.provider === 'cloudflare-pages') {
-        if (!client) throw new Error('GitHub にログインしていません。');
+        // GitHubClient と GitLabClient は、ここで使うメソッドの形が同じ
+        const repoClient = onGitLab ? glClient : client;
+        if (!repoClient) throw new Error(onGitLab ? 'GitLab にログインしていません。' : 'GitHub にログインしていません。');
         const token = loadCloudflareToken();
         if (!token) throw new Error('Cloudflareに接続されていません。入力画面に戻って接続してください。');
         if (!config.cloudflareAccountId) throw new Error('Cloudflareアカウントが選択されていません。');
@@ -64,18 +68,18 @@
         if (!projectName) throw new Error('リポジトリ名からCloudflare Pagesのプロジェクト名を生成できません。');
 
         report('create-repo', 'running');
-        if (!(await client.repoExists(ref))) {
-          await client.createRepo(config.owner, config.ownerType, config.repo, config.description);
-          for (let i = 0; i < 10 && !(await client.repoExists(ref)); i++) await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (!(await repoClient.repoExists(ref))) {
+          await repoClient.createRepo(config.owner, config.ownerType, config.repo, config.description);
+          for (let i = 0; i < 10 && !(await repoClient.repoExists(ref)); i++) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         report('create-repo', 'done');
 
         report('enable-pages', 'running');
-        const details = await client.getRepositoryDetails(ref);
+        const details = await repoClient.getRepositoryDetails(ref);
         report('enable-pages', 'done');
 
         report('push-site', 'running');
-        const commitSha = await client.commitFiles(ref, details.defaultBranch, siteFiles(config), 'Set up blog with Blogit');
+        const commitSha = await repoClient.commitFiles(ref, details.defaultBranch, siteFiles(config), 'Set up blog with Blogit');
         setupState.commitSha = commitSha;
         report('push-site', 'done');
 
@@ -83,7 +87,7 @@
         let project = await cf.getPagesProject(config.cloudflareAccountId, projectName);
         if (!project) {
           project = await cf.createPagesProject(config.cloudflareAccountId, {
-            owner: config.owner, ownerId: details.ownerId, repoId: details.id,
+            source: onGitLab ? 'gitlab' : 'github', owner: config.owner, ownerId: details.ownerId, repoId: details.id,
             repoName: projectName, branch: details.defaultBranch,
           });
         }
@@ -129,7 +133,7 @@
 
   function retryWithToken(e: SubmitEvent) {
     e.preventDefault();
-    if (isGitLab && glClient) {
+    if (onGitLab && glClient) {
       glClient = new GitLabClient(glClient.baseUrl, newToken.trim());
       saveGitLab(glClient.baseUrl, newToken.trim());
     } else {
@@ -171,7 +175,7 @@
       <div class="field">
         <label for="new-token">トークンを入れ直して再実行</label>
         <input id="new-token" type="password" bind:value={newToken} autocomplete="off" required />
-        {#if !isGitLab}<TokenHelp />{/if}
+        {#if !onGitLab}<TokenHelp />{/if}
       </div>
       <div class="actions">
         <button class="button" type="submit" disabled={running || !newToken.trim()}>このトークンで続きから再実行</button>
@@ -183,7 +187,7 @@
     <div class="actions">
       <a class="button" href={siteUrl} target="_blank" rel="noopener">ブログを開く</a>
       <a class="button secondary" href="{siteUrl}admin/" target="_blank" rel="noopener">記事を書く</a>
-      <a class="button secondary" href={isGitLab && glClient ? `${glClient.baseUrl}/${config.owner}/${config.repo}` : `https://github.com/${config.owner}/${config.repo}`} target="_blank" rel="noopener">リポジトリ</a>
+      <a class="button secondary" href={onGitLab && glClient ? `${glClient.baseUrl}/${config.owner}/${config.repo}` : `https://github.com/${config.owner}/${config.repo}`} target="_blank" rel="noopener">リポジトリ</a>
     </div>
   {/if}
 </div>

@@ -110,6 +110,12 @@ export class GitLabClient {
     return commit.id;
   }
 
+  // Cloudflare Pages の Git 連携に渡す ID と既定のブランチ（空のプロジェクトは default_branch が無いため main）
+  async getRepositoryDetails(ref: RepoRef): Promise<{ id: number; ownerId: number; defaultBranch: string }> {
+    const p = await this.request<{ id: number; default_branch: string | null; namespace: { id: number } }>('GET', `/projects/${GitLabClient.project(ref)}`);
+    return { id: p.id, ownerId: p.namespace.id, defaultBranch: p.default_branch ?? 'main' };
+  }
+
   // 公開 URL（初回のデプロイ前や、Pages の API が無い古い GitLab では null）
   async getPagesUrl(ref: RepoRef): Promise<string | null> {
     try {

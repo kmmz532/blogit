@@ -45,6 +45,8 @@
   let error = $state('');
 
   const isGitLab = $derived(platform === 'gitlab');
+  // Cloudflare の Git 連携は gitlab.com のみ対応する
+  const cloudflareAvailable = $derived(!isGitLab || gitlabUrl === GITLAB_COM);
   const repoValid = $derived(isGitLab ? validateGitLabProjectPath(repo) : validateRepoName(repo));
   const cloudflareRepoValid = $derived(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(repo));
   const url = $derived(selectedProvider === 'cloudflare-pages'
@@ -98,7 +100,7 @@
 </script>
 
 <h1 class="page-title">ブログを作る</h1>
-<p class="lead">{isGitLab ? `GitLab（${gitlabUrl}）にプロジェクトを作成し、GitLab Pages に公開します。` : 'GitHub にリポジトリを作成し、選択したサービスに公開します。'}</p>
+<p class="lead">{isGitLab ? `GitLab（${gitlabUrl}）にプロジェクトを作成し、選択したサービスに公開します。` : 'GitHub にリポジトリを作成し、選択したサービスに公開します。'}</p>
 
 <form class="stack" onsubmit={submit}>
   <section class="card stack">
@@ -108,7 +110,7 @@
       <div class="choices">
         {#if isGitLab}
         <label class="choice">
-          <input type="radio" name="provider" value="gitlab-pages" checked />
+          <input type="radio" name="provider" value="gitlab-pages" checked={selectedProvider === 'gitlab-pages'} onchange={() => onSelectProvider('gitlab-pages')} />
           <span class="choice-name">GitLab Pages</span>
           <span class="hint">GitLab CI/CD でビルド・公開</span>
         </label>
@@ -118,6 +120,8 @@
           <span class="choice-name">GitHub Pages</span>
           <span class="hint">GitHub Actions でビルド・公開</span>
         </label>
+        {/if}
+        {#if cloudflareAvailable}
         <label class="choice">
           <input type="radio" name="provider" value="cloudflare-pages" checked={selectedProvider === 'cloudflare-pages'} onchange={() => onSelectProvider('cloudflare-pages')} />
           <span class="choice-name">Cloudflare Pages</span>
@@ -151,7 +155,7 @@
           </div>
         {/if}
         {#if cloudflareError}<p class="error-text">{cloudflareError}</p>{/if}
-        <p class="hint">※ GitHub リポジトリを Cloudflare Pages に接続するには、Cloudflare 側の GitHub App 認可も必要です。</p>
+        <p class="hint">{isGitLab ? '※ GitLab のプロジェクトを Cloudflare Pages に接続するには、Cloudflare のダッシュボード（Workers & Pages → Git 連携）で GitLab アカウントの連携も必要です。' : '※ GitHub リポジトリを Cloudflare Pages に接続するには、Cloudflare 側の GitHub App 認可も必要です。'}</p>
       </div>
     {/if}
   </section>

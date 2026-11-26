@@ -33,6 +33,8 @@ export function validateGitLabProjectPath(name: string): boolean {
 
 const gitlabUrl = (c: BlogConfig) => normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM;
 const isGitLabCom = (c: BlogConfig) => gitlabUrl(c) === GITLAB_COM;
+// リポジトリが GitLab にあるか（公開先は GitLab Pages か Cloudflare Pages）
+export const isGitLabRepo = (c: BlogConfig) => c.provider === 'gitlab-pages' || c.gitlabUrl !== undefined;
 // 選択された公開先の URL。セルフホストの GitLab は Pages のドメインが不明なため / にする（ビルド時に CI_PAGES_URL で上書きする）
 export function defaultBaseURL(c: BlogConfig): string {
   if (c.provider === 'cloudflare-pages') return cloudflarePagesBaseURL(c.repo);
@@ -46,7 +48,7 @@ const str = (s: string) => JSON.stringify(s);
 // baseURL は実際の公開 URL。省略時は選択された公開先の URL
 export function hugoToml(c: BlogConfig, baseURL = defaultBaseURL(c)): string {
   const repo = `${c.owner}/${c.repo}`;
-  const gitlab = c.provider === 'gitlab-pages';
+  const gitlab = isGitLabRepo(c);
   // 管理画面は hugo-gh-admin（テーマが取り込む）。GitLab のサイトでは provider = "gitlab" にする
   const admin = `# 管理画面（hugo-gh-admin）。記事もサイト設定もこの${gitlab ? 'プロジェクト' : 'リポジトリ'}に保存する
 [params.ghAdmin]
@@ -100,7 +102,7 @@ ${admin}
 
 // 依存の版は初回ビルドで Hugo が解決する（その後は hugo mod get で固定する）
 export function goMod(c: BlogConfig): string {
-  const host = c.provider === 'gitlab-pages'
+  const host = isGitLabRepo(c)
     ? new URL(normalizeGitLabUrl(c.gitlabUrl ?? GITLAB_COM) ?? GITLAB_COM).host
     : 'github.com';
   return `module ${host}/${c.owner}/${c.repo}

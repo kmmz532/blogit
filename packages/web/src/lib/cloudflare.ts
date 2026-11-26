@@ -156,7 +156,8 @@ export class CloudflareClient {
   }
 
   async createPagesProject(accountId: string, repo: {
-    owner: string; ownerId: number; repoId: number; repoName: string; branch: string;
+    // source は Cloudflare の Git 連携の種類。gitlab は gitlab.com のみ（セルフホストは非対応）
+    source: 'github' | 'gitlab'; owner: string; ownerId: number; repoId: number; repoName: string; branch: string;
   }): Promise<{ subdomain?: string }> {
     return this.request(`/accounts/${accountId}/pages/projects`, {
       method: 'POST',
@@ -179,7 +180,7 @@ export class CloudflareClient {
           } },
         },
         source: {
-          type: 'github',
+          type: repo.source,
           config: {
             owner: repo.owner,
             owner_id: String(repo.ownerId),

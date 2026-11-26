@@ -30,7 +30,8 @@
     const client = new GitLabClient(url, token);
     owners = await client.listOwners();
     gl = client;
-    selectedProvider = 'gitlab-pages';
+    // Cloudflare の接続から戻ったときは選択を保つ。それ以外は GitLab Pages
+    if (selectedProvider !== 'cloudflare-pages') selectedProvider = 'gitlab-pages';
   }
 
   async function connectCloudflare() {
@@ -137,7 +138,7 @@
     <p class="lead">読み込み中…</p>
   {:else if gl}
     {#if !config}
-      <SetupForm platform="gitlab" client={gl} {owners} cloudflareAccounts={[]} cloudflareConnected={false} cloudflareError="" selectedCloudflareAccountId="" selectedProvider="gitlab-pages" gitlabUrl={gl.baseUrl} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={() => {}} onSubmit={(c) => (config = c)} />
+      <SetupForm platform="gitlab" client={gl} {owners} {cloudflareAccounts} {cloudflareConnected} {cloudflareError} {selectedCloudflareAccountId} {selectedProvider} gitlabUrl={gl.baseUrl} onSelectProvider={selectProvider} onConnectCloudflare={connectCloudflare} onSelectCloudflareAccount={(id) => (selectedCloudflareAccountId = id)} onSubmit={(c) => (config = c)} />
     {:else}
       <Progress {gl} {config} onBack={() => (config = null)} />
     {/if}
