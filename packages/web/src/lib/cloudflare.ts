@@ -136,7 +136,21 @@ export class CloudflareClient {
       result = await this.request<{ id: string; name: string }[]>('/accounts?per_page=50');
     } catch (error) {
       if (error instanceof TypeError) {
-        throw new Error(`Cloudflare account list network/CORS error: ${error.message}`);
+        try {
+          const probe = await fetch(`${API_URL}/accounts?per_page=1`, {
+            headers: { Accept: 'application/json' },
+          });
+          throw new Error(
+            `Cloudflare account list failed with Authorization (likely preflight) while a simple CORS request succeeded (HTTP ${probe.status}).`,
+          );
+        } catch (probeError) {
+          if (probeError instanceof TypeError) {
+            throw new Error(
+              'Cloudflare API CORS diagnostic: even a simple unauthenticated request is blocked. The API origin is not allowing this browser origin, or the request is being blocked by the network.',
+            );
+          }
+          throw probeError;
+        }
       }
       throw error;
     }
