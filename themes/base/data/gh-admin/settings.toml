@@ -78,6 +78,11 @@
         ja = "X"
         en = "X"
     [[fields.columns.options]]
+      value = "fa-brands fa-twitter"
+      [fields.columns.options.label]
+        ja = "Twitter（鳥のロゴ）"
+        en = "Twitter (bird logo)"
+    [[fields.columns.options]]
       value = "fa-brands fa-bluesky"
       [fields.columns.options.label]
         ja = "Bluesky"

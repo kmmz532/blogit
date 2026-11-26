@@ -60,6 +60,7 @@ export const LINK_ICONS = [
   { id: 'github', name: 'GitHub', nameEn: 'GitHub', icon: 'fa-brands fa-github' },
   { id: 'gitlab', name: 'GitLab', nameEn: 'GitLab', icon: 'fa-brands fa-gitlab' },
   { id: 'x', name: 'X', nameEn: 'X', icon: 'fa-brands fa-x-twitter' },
+  { id: 'twitter', name: 'Twitter（鳥のロゴ）', nameEn: 'Twitter (bird logo)', icon: 'fa-brands fa-twitter' },
   { id: 'bluesky', name: 'Bluesky', nameEn: 'Bluesky', icon: 'fa-brands fa-bluesky' },
   { id: 'mastodon', name: 'Mastodon', nameEn: 'Mastodon', icon: 'fa-brands fa-mastodon' },
   { id: 'threads', name: 'Threads', nameEn: 'Threads', icon: 'fa-brands fa-threads' },
