@@ -5,7 +5,7 @@ const API_URL = 'https://api.cloudflare.com/client/v4';
 const TOKEN_KEY = 'blogit:cloudflare-token';
 const STATE_KEY = 'blogit:cloudflare-oauth-state';
 const VERIFIER_KEY = 'blogit:cloudflare-code-verifier';
-const SCOPES = ['account.read', 'pages.write'];
+const SCOPES = ['account-settings.read', 'page.write'];
 
 function storage(): Storage | null {
   try {
